@@ -1,0 +1,132 @@
+%% D3.3 - RL Policy Data Flow
+%% UAV Flight Controller with On-Board Reinforcement Learning
+%% Priority 2 - RL Data Pipeline
+%% Placement: 03_WBS_Phase3_RL_Control.md (Section 3.2)
+
+graph LR
+    %% Raw Sensor Inputs
+    subgraph RawInputs["Raw Sensor Inputs"]
+        IMU_Accel[("IMU Accelerometer<br/>a_x, a_y, a_z<br/>(m/s²)")]
+        IMU_Gyro[("IMU Gyroscope<br/>p, q, r<br/>(rad/s)")]
+        GPS_Pos[("GPS Position<br/>x, y, z<br/>(m)")]
+        Baro_Alt[("Barometer Altitude<br/>h<br/>(m)")]
+    end
+    
+    %% State Estimation
+    subgraph StateEst["State Estimation"]
+        Fusion[State Fusion<br/>EKF or Complementary<br/>Filter]
+        
+        EstState["Estimated State Vector:<br/>• Position: [x, y, z]<br/>• Velocity: [vx, vy, vz]<br/>• Attitude: [roll, pitch, yaw]<br/>• Rates: [p, q, r]<br/>(12 states total)"]
+    end
+    
+    %% Observation Space Construction
+    subgraph ObsSpace["Observation Space Construction"]
+        SelectStates[Select Relevant States<br/>May exclude some states<br/>Add derived features]
+        
+        AddGoal[Add Goal Information<br/>Target position<br/>or waypoint]
+        
+        AddHistory[Add History<br/>(Optional)<br/>Previous N states]
+        
+        RawObs["Raw Observation Vector<br/>e.g., [12 states + 3 goal]<br/>= 15 dimensions"]
+    end
+    
+    %% Normalization
+    subgraph Normalization["Input Normalization"]
+        CalcStats["Normalization Statistics<br/>(computed during training):<br/>μ (mean), σ (std dev)<br/>per dimension"]
+        
+        Normalize["Normalize:<br/>obs_norm = (obs_raw - μ) / σ<br/>Target range: [-1, 1]<br/>or [0, 1]"]
+        
+        NormObs["Normalized Observation<br/>Ready for NN input"]
+    end
+    
+    %% Neural Network Forward Pass
+    subgraph NeuralNet["Neural Network Policy"]
+        InputLayer["Input Layer<br/>[15 neurons]<br/>(observation dims)"]
+        
+        Hidden1["Hidden Layer 1<br/>[128 neurons]<br/>ReLU activation"]
+        
+        Hidden2["Hidden Layer 2<br/>[128 neurons]<br/>ReLU activation"]
+        
+        OutputLayer["Output Layer<br/>[4 neurons]<br/>Tanh activation<br/>(action dims)"]
+        
+        ValueHead["Value Function Head<br/>(if PPO)<br/>[1 neuron]<br/>State value V(s)"]
+    end
+    
+    %% Action Space
+    subgraph ActionSpace["Action Space Output"]
+        RawAction["Raw Action Vector<br/>a_norm ∈ [-1, 1]<br/>[4 values for motors]"]
+        
+        Denormalize["Denormalize Action:<br/>a_real = a_norm × scale + offset<br/>Map to motor range"]
+        
+        Saturate["Saturation & Clipping:<br/>Ensure motor limits<br/>e.g., [0.0, 1.0]<br/>or [1000, 2000] μs PWM"]
+        
+        MotorCommands["Motor Commands<br/>M1, M2, M3, M4<br/>(PWM or thrust)"]
+    end
+    
+    %% Apply to System
+    Motors[("Motor Actuators<br/>Apply thrust<br/>to UAV")]
+    
+    %% Data Flow
+    IMU_Accel --> Fusion
+    IMU_Gyro --> Fusion
+    GPS_Pos --> Fusion
+    Baro_Alt --> Fusion
+    
+    Fusion --> EstState
+    
+    EstState --> SelectStates
+    SelectStates --> AddGoal
+    AddGoal --> AddHistory
+    AddHistory --> RawObs
+    
+    RawObs --> Normalize
+    CalcStats -.->|"Learned from training"| Normalize
+    Normalize --> NormObs
+    
+    NormObs --> InputLayer
+    InputLayer --> Hidden1
+    Hidden1 --> Hidden2
+    Hidden2 --> OutputLayer
+    Hidden2 -.->|"PPO only"| ValueHead
+    
+    OutputLayer --> RawAction
+    
+    RawAction --> Denormalize
+    Denormalize --> Saturate
+    Saturate --> MotorCommands
+    
+    MotorCommands --> Motors
+    
+    %% Feedback loop
+    Motors -.->|"Affects UAV state"| IMU_Accel
+    Motors -.->|"Affects UAV state"| IMU_Gyro
+    
+    %% Annotations
+    Note1[/"Data dimensions:<br/>Raw sensors → State (12D)<br/>→ Obs (15D) → Hidden (128D)<br/>→ Action (4D) → Motors"/]
+    EstState -.-> Note1
+    
+    Note2[/"Timing:<br/>State est: <2ms<br/>NN inference: <8ms<br/>Total: <10ms"/]
+    NeuralNet -.-> Note2
+    
+    %% Styling
+    classDef sensors fill:#F5A623,stroke:#333,stroke-width:2px,color:#000
+    classDef processing fill:#4A90E2,stroke:#333,stroke-width:2px,color:#fff
+    classDef nn fill:#9013FE,stroke:#333,stroke-width:2px,color:#fff
+    classDef output fill:#7ED321,stroke:#333,stroke-width:2px,color:#000
+    classDef actuator fill:#D0021B,stroke:#333,stroke-width:2px,color:#fff
+    
+    class IMU_Accel,IMU_Gyro,GPS_Pos,Baro_Alt sensors
+    class Fusion,EstState,SelectStates,AddGoal,AddHistory,RawObs processing
+    class Normalize,CalcStats,NormObs,Denormalize,Saturate processing
+    class InputLayer,Hidden1,Hidden2,OutputLayer,ValueHead nn
+    class RawAction,MotorCommands output
+    class Motors actuator
+
+%% RL Policy Data Flow Summary:
+%% 1. Raw sensors → State estimation (12D state vector)
+%% 2. State + goal → Observation space (15D)
+%% 3. Normalization → Scaled to [-1, 1]
+%% 4. Neural network forward pass (15 → 128 → 128 → 4)
+%% 5. Denormalization → Motor commands
+%% 6. Saturation → Safe motor limits
+%% 7. Commands applied to actuators

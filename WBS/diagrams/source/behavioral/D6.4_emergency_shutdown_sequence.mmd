@@ -1,0 +1,225 @@
+%% D6.4 - Emergency Shutdown Sequence Diagram
+%% UAV Flight Controller with On-Board Reinforcement Learning
+%% Priority 3 - Failsafe & Safety
+%% Placement: 04_WBS_Phase4_HIL_Flight_Control.md (Section 4.6)
+
+sequenceDiagram
+    participant Trigger as Trigger Source
+    participant Safety as Safety Monitor Task
+    participant Control as Control Task
+    participant Motors as Motor Output
+    participant State as State Machine
+    participant Buzzer as Buzzer/LED
+    participant Log as Black Box Logger
+    participant RTOS as FreeRTOS
+    
+    Note over Trigger,RTOS: Normal Flight Operation (InFlight state)
+    
+    alt Manual Kill Switch
+        Trigger->>Safety: RC kill switch activated
+        Note right of Trigger: Operator command<br/>Highest priority
+        
+    else Sensor Timeout
+        Trigger->>Safety: IMU timeout (>15ms)
+        Note right of Trigger: No sensor data<br/>Cannot estimate state
+        
+    else Battery Critical
+        Trigger->>Safety: Battery < 3.3V/cell
+        Note right of Trigger: Imminent power loss<br/>Controlled landing impossible
+        
+    else Attitude Error
+        Trigger->>Safety: Roll/Pitch > 45°
+        Note right of Trigger: Uncontrolled flight<br/>Dangerous orientation
+        
+    else RL Inference Timeout
+        Trigger->>Safety: NN inference > 10ms
+        Note right of Trigger: Control loop delayed<br/>Real-time violation
+        
+    else Watchdog Timeout
+        Trigger->>Safety: Watchdog expired (50ms)
+        Note right of Trigger: Software hang detected<br/>System unresponsive
+    end
+    
+    activate Safety
+    
+    Note over Safety,State: Emergency Detection & Validation
+    Safety->>Safety: Validate trigger condition
+    Safety->>Safety: Check trigger persistence (3 samples)
+    
+    alt Confirmed Emergency
+        Safety->>Safety: Set emergency flag = TRUE
+        Safety->>Safety: Record emergency code
+        Safety->>Safety: Timestamp event
+        
+        Note over Safety: Critical Action: Cut Motors Immediately
+        Safety->>Motors: EMERGENCY_STOP()
+        activate Motors
+        Motors->>Motors: Set all PWM outputs to ZERO
+        Motors->>Motors: Disable timer interrupts
+        Motors->>Motors: GPIO_WritePin(ALL_MOTORS, LOW)
+        Motors-->>Safety: Motors cut (latency <1ms)
+        deactivate Motors
+        
+        Note right of Motors: All 4 motors immediately<br/>set to zero throttle<br/>UAV begins free-fall
+        
+        Safety->>Buzzer: BEEP_PATTERN_EMERGENCY
+        activate Buzzer
+        Buzzer->>Buzzer: Continuous high-pitch tone (4 kHz)
+        Buzzer->>Buzzer: LED: Red fast blink (10 Hz)
+        
+        Note over Safety,State: Update System State
+        Safety->>State: Trigger state transition
+        activate State
+        State->>State: Current state = InFlight
+        State->>State: Transition to EMERGENCY state
+        State->>State: Lock state (prevent re-arming)
+        State-->>Safety: State = EMERGENCY
+        deactivate State
+        
+        Note over Safety,Log: Emergency Data Logging
+        Safety->>Log: LOG_EMERGENCY_EVENT()
+        activate Log
+        Log->>Log: Log emergency code
+        Log->>Log: Log timestamp
+        Log->>Log: Log last sensor values
+        Log->>Log: Log last motor commands
+        Log->>Log: Log stack trace (if available)
+        Log->>Log: Flush buffer to SD card
+        Log-->>Safety: Event logged
+        deactivate Log
+        
+        Note over Safety,Control: Halt Control Tasks
+        Safety->>Control: SUSPEND_CONTROL_TASK
+        activate Control
+        Control->>Control: Stop RL inference
+        Control->>Control: Stop state estimation
+        Control->>Control: Release resources
+        Control-->>Safety: Task suspended
+        deactivate Control
+        
+        Safety->>RTOS: Suspend non-critical tasks
+        activate RTOS
+        RTOS->>RTOS: Suspend TelemetryTask
+        RTOS->>RTOS: Keep SafetyTask running
+        RTOS->>RTOS: Keep LoggerTask running
+        RTOS-->>Safety: Tasks suspended
+        deactivate RTOS
+        
+        Note over Safety,Buzzer: Error Reporting
+        Safety->>Buzzer: BLINK_ERROR_CODE
+        Buzzer->>Buzzer: Wait 2 seconds
+        
+        loop Error code repetition (3 times)
+            Buzzer->>Buzzer: Blink count = error code
+            Note right of Buzzer: Error codes:<br/>1 = Manual kill<br/>2 = Sensor timeout<br/>3 = Battery critical<br/>4 = Attitude error<br/>5 = RL timeout<br/>6 = Watchdog timeout
+            Buzzer->>Buzzer: Pause 1 second
+        end
+        
+        deactivate Buzzer
+        
+        Note over Safety: Post-Emergency Actions
+        Safety->>Safety: Disable arming capability
+        Safety->>Safety: Set recovery_required flag
+        Safety->>Safety: Monitor battery voltage
+        
+        alt Battery still critical
+            Safety->>Log: LOG_CRITICAL_BATTERY
+            Safety->>Safety: Prepare for power loss
+            Safety->>Log: Final SD card sync
+            
+        else Battery OK
+            Safety->>Safety: Keep logging active
+            Safety->>Safety: Wait for manual reset
+        end
+        
+        Note over Trigger,RTOS: System Locked in Emergency State
+        
+        Safety->>Safety: Enter infinite loop
+        loop Every 100ms
+            Safety->>Motors: Verify motors still zero
+            Safety->>Buzzer: Update LED pattern
+            Safety->>Log: Heartbeat log entry
+            
+            alt Manual reset requested
+                Safety->>State: Check reset button
+                State->>State: Validate safe conditions
+                alt Safe to reset
+                    State->>State: Transition to PowerOn
+                    State->>RTOS: Request system restart
+                    RTOS->>RTOS: NVIC_SystemReset()
+                    Note over RTOS: MCU performs hard reset<br/>System reboots
+                else Not safe
+                    State-->>Safety: Reset denied
+                    Safety->>Buzzer: Beep error tone
+                end
+            end
+        end
+        
+        deactivate Safety
+        
+    else False Alarm
+        Safety->>Safety: Ignore transient glitch
+        Safety->>Safety: Increment false alarm counter
+        Safety-->>Trigger: No action taken
+    end
+    
+    Note over Trigger,RTOS: Emergency Sequence Complete
+    Note over Motors: Motors remain at zero<br/>System requires manual reset<br/>All events logged for post-flight analysis
+
+%% Emergency Shutdown Sequence Summary:
+%% 
+%% Trigger Conditions:
+%%   1. Manual kill switch (RC command) - Highest priority
+%%   2. Sensor timeout (>15ms without data) - Cannot estimate state
+%%   3. Battery critical (<3.3V/cell) - Imminent power loss
+%%   4. Attitude error (>45° roll/pitch) - Uncontrolled flight
+%%   5. RL inference timeout (>10ms) - Real-time violation
+%%   6. Watchdog timeout (50ms) - Software hang detected
+%% 
+%% Emergency Actions (executed in order):
+%%   1. Cut all motors to zero (latency <1ms)
+%%   2. Activate emergency buzzer and LED pattern
+%%   3. Transition state machine to EMERGENCY state
+%%   4. Log emergency event with timestamp and context
+%%   5. Suspend control and telemetry tasks
+%%   6. Blink error code (3 repetitions)
+%%   7. Lock arming capability
+%%   8. Enter monitoring loop (wait for manual reset)
+%% 
+%% Error Codes (blink pattern):
+%%   1 blink = Manual kill switch
+%%   2 blinks = Sensor timeout
+%%   3 blinks = Battery critical
+%%   4 blinks = Attitude error
+%%   5 blinks = RL inference timeout
+%%   6 blinks = Watchdog timeout
+%% 
+%% Safety Features:
+%%   - Motors cut in <1ms (priority interrupt)
+%%   - All triggers validated (3 consecutive samples)
+%%   - Emergency state is locked (cannot re-arm without reset)
+%%   - Black box logging continues after shutdown
+%%   - Buzzer/LED provides visual/audio feedback
+%%   - Manual reset requires safe conditions check
+%% 
+%% Post-Emergency Behavior:
+%%   - System remains in EMERGENCY state indefinitely
+%%   - Motors locked at zero (hardware level)
+%%   - Continuous error code display
+%%   - Logging active (SD card flush on power loss)
+%%   - Manual reset required (cannot auto-recover)
+%% 
+%% Recovery Procedure:
+%%   1. Operator physically removes battery (power off)
+%%   2. Inspect UAV for damage
+%%   3. Review black box logs for root cause
+%%   4. Fix underlying issue (replace sensor, charge battery, etc.)
+%%   5. Power on UAV (system reboots)
+%%   6. Verify preflight checks pass
+%%   7. Re-arm and resume flight (if safe)
+%% 
+%% Latency Requirements:
+%%   - Emergency detection to motor cut: <1ms
+%%   - State transition: <5ms
+%%   - Logging: <10ms (non-blocking)
+%%   - Total response time: <20ms from trigger

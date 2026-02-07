@@ -1,0 +1,381 @@
+%% D1.7 - Safety and Fault Management Architecture
+%% UAV Flight Controller with On-Board Reinforcement Learning
+%% Priority 1 - Critical Safety Systems
+%% Placement: 00_WBS_Master_Overview.md (Section 3.4)
+
+graph TB
+    subgraph "Safety Monitoring Layer"
+        SM[Safety Monitor<br/>100 Hz Task]
+        BM[Battery Monitor<br/>10 Hz]
+        TM[Thermal Monitor<br/>1 Hz]
+        WD[Watchdog Timer<br/>50ms timeout]
+        HM[Health Monitor<br/>1 Hz]
+    end
+    
+    subgraph "Sensor Fault Detection"
+        IMU_FD[IMU Fault Detector]
+        BARO_FD[Barometer Fault Detector]
+        GPS_FD[GPS Fault Detector]
+        MAG_FD[Magnetometer Fault Detector]
+        
+        IMU_FD -->|Timeout >1ms| SM
+        IMU_FD -->|Range violation| SM
+        IMU_FD -->|CRC error| SM
+        
+        BARO_FD -->|Timeout >20ms| SM
+        BARO_FD -->|Pressure out of range| SM
+        
+        GPS_FD -->|No fix >30s| SM
+        GPS_FD -->|HDOP >5.0| SM
+        GPS_FD -->|Satellite count <4| SM
+        
+        MAG_FD -->|Timeout >15ms| SM
+        MAG_FD -->|Magnetic interference| SM
+    end
+    
+    subgraph "Flight Envelope Protection"
+        ALT_LIMIT[Altitude Limiter<br/>0-100m AGL]
+        ATT_LIMIT[Attitude Limiter<br/>±45° max tilt]
+        VEL_LIMIT[Velocity Limiter<br/>15 m/s max]
+        GEOFENCE[Geofence<br/>±500m from home]
+        
+        ALT_LIMIT -->|Violation| SM
+        ATT_LIMIT -->|Violation| SM
+        VEL_LIMIT -->|Violation| SM
+        GEOFENCE -->|Breach| SM
+    end
+    
+    subgraph "Control System Safety"
+        RL_WD[RL Inference Watchdog<br/>5ms timeout]
+        PID_FB[PID Fallback Controller]
+        MIX_SAT[Mixer Saturation Monitor]
+        ESC_HB[ESC Heartbeat Monitor]
+        
+        RL_WD -->|RL timeout| PID_FB
+        RL_WD -->|RL timeout| SM
+        MIX_SAT -->|Saturation >90%| SM
+        ESC_HB -->|ESC not responding| SM
+    end
+    
+    subgraph "Power & Thermal Safety"
+        BATT_CRIT[Battery Critical<br/><3.3V/cell]
+        BATT_LOW[Battery Low<br/><3.5V/cell]
+        BATT_FAIL[Battery Failsafe<br/><3.0V/cell]
+        
+        CURR_LIM[Current Limiter<br/>60A max]
+        TEMP_WARN[Temperature Warning<br/>>70°C]
+        TEMP_CRIT[Temperature Critical<br/>>85°C]
+        
+        BM --> BATT_CRIT
+        BM --> BATT_LOW
+        BM --> BATT_FAIL
+        
+        BATT_LOW -->|Warning| SM
+        BATT_CRIT -->|RTL mode| SM
+        BATT_FAIL -->|Emergency shutdown| SM
+        
+        TM --> TEMP_WARN
+        TM --> TEMP_CRIT
+        
+        TEMP_WARN -->|Reduce power| SM
+        TEMP_CRIT -->|Emergency shutdown| SM
+        
+        CURR_LIM -->|Limit motor commands| SM
+    end
+    
+    subgraph "Safety State Machine"
+        SM --> FSM[Flight Safety FSM]
+        
+        FSM --> NORMAL[NORMAL<br/>All systems OK]
+        FSM --> WARNING[WARNING<br/>Non-critical fault]
+        FSM --> CRITICAL[CRITICAL<br/>Fault detected]
+        FSM --> EMERGENCY[EMERGENCY<br/>Immediate danger]
+        FSM --> SHUTDOWN[SHUTDOWN<br/>Motors off]
+        
+        NORMAL -->|Fault detected| WARNING
+        WARNING -->|Fault cleared| NORMAL
+        WARNING -->|Escalation| CRITICAL
+        
+        CRITICAL -->|RTL initiated| CRITICAL
+        CRITICAL -->|Land initiated| CRITICAL
+        CRITICAL -->|Fatal fault| EMERGENCY
+        
+        EMERGENCY -->|<1ms| SHUTDOWN
+        SHUTDOWN -->|Manual reset| NORMAL
+    end
+    
+    subgraph "Failsafe Actions"
+        RTL[Return to Launch<br/>Auto navigation]
+        LAND[Emergency Land<br/>Vertical descent 1 m/s]
+        KILL[Motor Kill<br/><1ms cutoff]
+        
+        WARNING -->|Battery low| RTL
+        CRITICAL -->|Battery critical| LAND
+        CRITICAL -->|GPS lost| LAND
+        CRITICAL -->|Control failure| LAND
+        EMERGENCY -->|Any trigger| KILL
+        
+        RTL --> GPS_REQ{GPS available?}
+        GPS_REQ -->|Yes| RTL_NAV[Navigate to home]
+        GPS_REQ -->|No| LAND
+        
+        LAND --> VD[Vertical descent<br/>1 m/s]
+        VD --> TOUCHDOWN[Touchdown detection]
+        TOUCHDOWN --> DISARM[Auto disarm]
+        
+        KILL --> MOTORS_OFF[All motors OFF]
+        MOTORS_OFF --> LOG[Log fault code]
+        LOG --> LED_BLINK[LED error pattern]
+    end
+    
+    subgraph "Emergency Triggers (OR logic)"
+        TRIG1[Manual kill switch]
+        TRIG2[RC signal lost >5s]
+        TRIG3[Telemetry lost >30s]
+        TRIG4[Attitude error >45°]
+        TRIG5[Altitude >100m AGL]
+        TRIG6[RL timeout >10ms]
+        TRIG7[IMU failure]
+        TRIG8[Battery <3.0V/cell]
+        TRIG9[Thermal >85°C]
+        
+        TRIG1 -.->|Immediate| EMERGENCY
+        TRIG2 -.->|After timeout| CRITICAL
+        TRIG3 -.->|Continue autonomous| WARNING
+        TRIG4 -.->|Immediate| EMERGENCY
+        TRIG5 -.->|Immediate| CRITICAL
+        TRIG6 -.->|Switch to PID| WARNING
+        TRIG7 -.->|Immediate| EMERGENCY
+        TRIG8 -.->|Immediate| EMERGENCY
+        TRIG9 -.->|Immediate| EMERGENCY
+    end
+    
+    subgraph "Logging & Diagnostics"
+        LOGGER[Black Box Logger<br/>SD card @ 100 Hz]
+        
+        SM --> LOGGER
+        FSM --> LOGGER
+        
+        LOGGER --> LOG_SENSORS[Sensor data<br/>IMU/Baro/GPS/Mag]
+        LOGGER --> LOG_CONTROL[Control signals<br/>RL/PID outputs]
+        LOGGER --> LOG_FAULTS[Fault events<br/>Timestamps + codes]
+        LOGGER --> LOG_BATTERY[Battery telemetry<br/>Voltage/current]
+        
+        LED[Status LED<br/>RGB indicator]
+        BUZZER[Buzzer<br/>Audio alerts]
+        
+        FSM --> LED
+        FSM --> BUZZER
+        
+        LED --> LED_GREEN[Green: Normal]
+        LED --> LED_YELLOW[Yellow: Warning]
+        LED --> LED_RED[Red: Critical]
+        LED --> LED_BLINK_CODE[Blink pattern: Error code]
+        
+        BUZZER --> BUZZ_WARN[Intermittent: Warning]
+        BUZZER --> BUZZ_CRIT[Continuous: Critical]
+    end
+    
+    subgraph "Safety Validation"
+        PREFLIGHT[Pre-flight Checks]
+        
+        PREFLIGHT --> CHECK_SENSORS[Sensor calibration valid?]
+        CHECK_SENSORS -->|No| BLOCK_ARM[Block arming]
+        CHECK_SENSORS -->|Yes| CHECK_GPS[GPS fix acquired?]
+        
+        CHECK_GPS -->|No & outdoor mode| BLOCK_ARM
+        CHECK_GPS -->|Yes or indoor mode| CHECK_BATTERY[Battery >3.7V/cell?]
+        
+        CHECK_BATTERY -->|No| BLOCK_ARM
+        CHECK_BATTERY -->|Yes| CHECK_NN[NN weights loaded?]
+        
+        CHECK_NN -->|No| WARN_PID[Warn: PID-only mode]
+        CHECK_NN -->|Yes| ALLOW_ARM[Allow arming]
+        WARN_PID --> ALLOW_ARM
+        
+        ALLOW_ARM --> ARM_LED[LED: Ready to arm]
+    end
+    
+    subgraph "Post-Crash Analysis"
+        CRASH_DETECT[Crash Detection<br/>High impact OR flip]
+        
+        CRASH_DETECT --> DISARM_NOW[Immediate disarm]
+        DISARM_NOW --> LOCK_STATE[Lock flight state]
+        LOCK_STATE --> DUMP_LOG[Dump logs to SD]
+        DUMP_LOG --> BUZZ_ERROR[Error buzzer pattern]
+        BUZZ_ERROR --> WAIT_RESET[Wait for manual reset]
+    end
+    
+    WD -->|Timeout| EMERGENCY
+    HM -->|System health critical| CRITICAL
+    
+    style EMERGENCY fill:#ff0000,stroke:#990000,color:#fff
+    style SHUTDOWN fill:#ff0000,stroke:#990000,color:#fff
+    style KILL fill:#ff0000,stroke:#990000,color:#fff
+    style MOTORS_OFF fill:#ff0000,stroke:#990000,color:#fff
+    
+    style CRITICAL fill:#ff9900,stroke:#cc6600,color:#000
+    style WARNING fill:#ffff00,stroke:#cccc00,color:#000
+    style NORMAL fill:#00ff00,stroke:#00cc00,color:#000
+    
+    style PID_FB fill:#9013FE,stroke:#6010AA,color:#fff
+    style RL_WD fill:#9013FE,stroke:#6010AA,color:#fff
+    
+    style LOGGER fill:#4A90E2,stroke:#2E5C8A,color:#fff
+    style SM fill:#4A90E2,stroke:#2E5C8A,color:#fff
+
+%% Safety and Fault Management Architecture Summary:
+%% 
+%% Layer 1: Sensor Fault Detection
+%%   - IMU fault detector (timeout <1ms, range check, CRC validation)
+%%   - Barometer fault detector (timeout <20ms, pressure range 300-1100 hPa)
+%%   - GPS fault detector (no fix timeout 30s, HDOP <5.0, satellite count ≥4)
+%%   - Magnetometer fault detector (timeout <15ms, magnetic interference detection)
+%%   - All feed into Safety Monitor at 100 Hz
+%% 
+%% Layer 2: Flight Envelope Protection
+%%   - Altitude limiter: 0-100m AGL (Above Ground Level)
+%%   - Attitude limiter: ±45° max tilt (roll/pitch), ±180° yaw
+%%   - Velocity limiter: 15 m/s max horizontal, 5 m/s max vertical
+%%   - Geofence: ±500m radius from home point
+%%   - Violations trigger safety state escalation
+%% 
+%% Layer 3: Control System Safety
+%%   - RL inference watchdog (5ms timeout)
+%%   - PID fallback controller (always ready)
+%%   - Mixer saturation monitor (warns at >90% saturation)
+%%   - ESC heartbeat monitor (checks motor controller responsiveness)
+%%   - Auto-switch to PID on RL timeout
+%% 
+%% Layer 4: Power & Thermal Safety
+%%   - Battery monitoring at 10 Hz:
+%%     * Low: <3.5V/cell → RTL (Return to Launch)
+%%     * Critical: <3.3V/cell → Emergency land
+%%     * Failsafe: <3.0V/cell → Emergency shutdown
+%%   - Current limiter: 60A max (prevents motor burnout)
+%%   - Thermal monitoring at 1 Hz:
+%%     * Warning: >70°C → Reduce power
+%%     * Critical: >85°C → Emergency shutdown
+%% 
+%% Layer 5: Safety State Machine (5 states)
+%%   1. NORMAL: All systems OK, normal flight operations
+%%   2. WARNING: Non-critical fault (battery low, GPS degraded, RL timeout)
+%%      - Continue flight with PID fallback or RTL
+%%   3. CRITICAL: Serious fault (battery critical, GPS lost, control failure)
+%%      - Initiate emergency landing or RTL
+%%   4. EMERGENCY: Immediate danger (flip, free fall, fatal sensor failure)
+%%      - Motor kill <1ms latency
+%%   5. SHUTDOWN: Motors off, logs saved, waiting for manual reset
+%% 
+%% Emergency Triggers (immediate EMERGENCY state):
+%%   - Manual kill switch activation
+%%   - Attitude error >45° (flip detection)
+%%   - RL timeout >10ms
+%%   - IMU complete failure
+%%   - Battery <3.0V/cell
+%%   - Thermal >85°C
+%%   - Watchdog timeout (50ms)
+%% 
+%% Failsafe Actions:
+%%   - RTL (Return to Launch):
+%%     * Requires GPS fix
+%%     * Auto-navigate to home point
+%%     * Land at home with 1 m/s descent
+%%   
+%%   - Emergency Land:
+%%     * Vertical descent at 1 m/s
+%%     * No horizontal movement
+%%     * Touchdown detection (accelerometer)
+%%     * Auto-disarm on ground contact
+%%   
+%%   - Motor Kill:
+%%     * <1ms latency (critical timing)
+%%     * All motors to 0% immediately
+%%     * Log fault code to SD card
+%%     * LED blink error pattern (1-9 blinks)
+%%     * Buzzer error sound
+%%     * Require manual reset to re-arm
+%% 
+%% Pre-flight Safety Checks:
+%%   1. Sensor calibration valid? (IMU bias computed, Mag calibrated)
+%%   2. GPS fix acquired? (if outdoor mode required)
+%%   3. Battery >3.7V/cell? (minimum safe voltage)
+%%   4. NN weights loaded? (if RL mode, else warn PID-only)
+%%   5. All checks pass → LED green, buzzer chirp, allow arming
+%% 
+%% Logging & Diagnostics:
+%%   - Black box logger: SD card @ 100 Hz
+%%   - Logged data:
+%%     * Sensor readings (IMU, Baro, GPS, Mag)
+%%     * Control signals (RL output, PID output, motor commands)
+%%     * Fault events (timestamp, code, severity)
+%%     * Battery telemetry (voltage, current, consumed mAh)
+%%   - Status indicators:
+%%     * RGB LED: Green (normal), Yellow (warning), Red (critical), Blink (error code)
+%%     * Buzzer: Intermittent (warning), Continuous (critical), Pattern (error code)
+%% 
+%% Post-Crash Analysis:
+%%   - Crash detection: High-G impact (>4g) OR flip (>90° roll/pitch)
+%%   - Immediate disarm motors
+%%   - Lock flight state (prevent re-arm)
+%%   - Dump logs to SD card (complete flight data)
+%%   - Error buzzer pattern (distinct from normal errors)
+%%   - Wait for manual reset and inspection
+%% 
+%% Watchdog Timer:
+%%   - 50ms timeout (independent hardware timer)
+%%   - Must be reset by main control loop
+%%   - Timeout triggers EMERGENCY state
+%%   - Prevents firmware hang/deadlock
+%% 
+%% Health Monitor:
+%%   - CPU load monitoring (warn >80%, critical >95%)
+%%   - RAM usage monitoring (warn >90%, critical >98%)
+%%   - Stack overflow detection
+%%   - Task execution time monitoring
+%%   - File system integrity (SD card)
+%% 
+%% Safety Design Principles:
+%%   1. Defense in depth: Multiple layers of protection
+%%   2. Fail-safe defaults: Safe state on any failure
+%%   3. Graceful degradation: Continue operation with reduced capability
+%%   4. Immediate response: <1ms for critical faults
+%%   5. Comprehensive logging: Full flight data recovery
+%%   6. Clear user feedback: LED + Buzzer status
+%%   7. Manual override: Kill switch always works
+%%   8. Pre-flight validation: Prevent arming with faults
+%%   9. Post-crash analysis: Learn from failures
+%%   10. Independent watchdog: Hardware-level protection
+%% 
+%% Fault Codes (LED blink pattern):
+%%   1 blink: Manual kill
+%%   2 blinks: IMU failure
+%%   3 blinks: Battery critical
+%%   4 blinks: Attitude error
+%%   5 blinks: RL timeout (repeated)
+%%   6 blinks: GPS lost
+%%   7 blinks: Thermal critical
+%%   8 blinks: Watchdog timeout
+%%   9 blinks: Unknown/multiple faults
+%% 
+%% Integration with Flight Controller:
+%%   - Safety Monitor runs as highest priority RTOS task
+%%   - Watchdog implemented in hardware (independent timer)
+%%   - All control outputs go through safety layer
+%%   - Safety can override any control command
+%%   - Manual kill switch has hardware-level interrupt
+%% 
+%% Testing & Validation:
+%%   - Unit tests: Each fault detector independently
+%%   - Integration tests: State machine transitions
+%%   - HIL tests: Full fault scenarios in simulation
+%%   - Bench tests: Physical hardware without props
+%%   - Flight tests: Progressive envelope expansion
+%%   - Failure injection: Deliberate fault testing
+%% 
+%% Regulatory Compliance:
+%%   - Geofence: Required for recreational UAV operation
+%%   - Altitude limit: FAA 400 ft (122m) regulatory limit (set to 100m)
+%%   - Kill switch: Required for safe operation
+%%   - Logging: Incident investigation capability
+%%   - Pre-flight checks: Best practice for safety

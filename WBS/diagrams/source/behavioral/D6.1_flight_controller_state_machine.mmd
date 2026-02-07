@@ -1,0 +1,191 @@
+%% D6.1 - Flight Controller State Machine
+%% UAV Flight Controller with On-Board Reinforcement Learning
+%% Priority 2 - Firmware Operational States
+%% Placement: 04_WBS_Phase4_HIL_Flight_Control.md (Section 4.6)
+
+stateDiagram-v2
+    [*] --> PowerOn : MCU Reset
+    
+    PowerOn --> Initialization : Hardware init
+    
+    state Initialization {
+        [*] --> InitHardware
+        InitHardware --> InitRTOS : HAL configured
+        InitRTOS --> InitSensors : RTOS started
+        InitSensors --> InitNN : Sensors calibrated
+        InitNN --> LoadWeights : NN structure ready
+        LoadWeights --> [*] : Weights loaded
+    }
+    
+    Initialization --> Preflight : Init success
+    Initialization --> Error : Init failure
+    
+    state Preflight {
+        [*] --> SelfTest
+        SelfTest --> SensorCheck : Hardware OK
+        SensorCheck --> CalibrationWait : Sensors valid
+        CalibrationWait --> PreflightReady : Calibration complete
+        PreflightReady --> [*]
+    }
+    
+    Preflight --> Armed : Arm command + safety checks pass
+    Preflight --> Error : Self-test failure
+    
+    state Armed {
+        [*] --> MotorsIdle
+        note right of MotorsIdle
+            Motors at minimum throttle
+            Ready to fly
+            RL policy active but outputs zero
+        end note
+        
+        MotorsIdle --> [*]
+    }
+    
+    Armed --> InFlight : Throttle increase detected
+    Armed --> Preflight : Disarm command
+    
+    state InFlight {
+        [*] --> Stabilize
+        
+        state Stabilize {
+            [*] --> SensorRead
+            SensorRead --> StateEstimation : 100 Hz
+            StateEstimation --> RLInference : State updated
+            RLInference --> ControlAllocation : Action computed
+            ControlAllocation --> MotorOutput : Commands mixed
+            MotorOutput --> [*] : PWM updated
+            MotorOutput --> SensorRead : Next cycle
+        }
+        
+        Stabilize --> Autonomous : Mode switch
+        Stabilize --> ManualPID : RL failover
+        
+        state Autonomous {
+            [*] --> WaypointNav
+            WaypointNav --> PathFollowing : Waypoint reached
+            PathFollowing --> [*]
+            
+            note right of WaypointNav
+                RL policy with goal input
+                Autonomous navigation
+            end note
+        }
+        
+        Autonomous --> Stabilize : Mode switch
+        
+        state ManualPID {
+            [*] --> PIDControl
+            
+            note right of PIDControl
+                Fallback to PID controller
+                If RL inference fails or timeout
+            end note
+            
+            PIDControl --> [*]
+        }
+        
+        ManualPID --> Stabilize : RL recovered
+    }
+    
+    InFlight --> Emergency : Critical failure detected
+    InFlight --> Armed : Landing complete
+    
+    state Emergency {
+        [*] --> FailsafeActivated
+        
+        state FailsafeActivated {
+            [*] --> CutMotors
+            CutMotors --> [*]
+            
+            note right of CutMotors
+                Emergency shutdown
+                All motors to zero
+                System locked
+            end note
+        }
+        
+        FailsafeActivated --> [*]
+    }
+    
+    Emergency --> Error : Unrecoverable
+    Emergency --> Preflight : Recovery possible + manual reset
+    
+    state Error {
+        [*] --> ErrorLogging
+        ErrorLogging --> BlinkLED : Log error code
+        BlinkLED --> [*]
+        
+        note right of BlinkLED
+            Visual error indication
+            System halted
+            Requires manual reset
+        end note
+    }
+    
+    Error --> [*] : Manual reset
+    
+    %% Transitions with conditions
+    note right of Armed
+        Arming conditions:
+        • Preflight checks pass
+        • Sensors valid
+        • NN weights loaded
+        • Battery voltage OK
+        • No active faults
+    end note
+    
+    note right of InFlight
+        In-flight monitoring:
+        • Watchdog timer (50 Hz)
+        • Sensor health checks
+        • RL inference timeout (<10ms)
+        • Motor saturation limits
+        • Battery voltage monitor
+    end note
+    
+    note left of Emergency
+        Emergency triggers:
+        • Sensor timeout (>15ms)
+        • RL inference timeout (>10ms)
+        • Motor saturation persistent (>5s)
+        • Battery critical (<3.3V/cell)
+        • Attitude error >45° (uncontrolled)
+        • Manual kill switch
+    end note
+
+%% State Machine Summary:
+%% 
+%% Main States:
+%%   1. PowerOn: Initial MCU boot
+%%   2. Initialization: Hardware + RTOS + sensors + NN setup
+%%   3. Preflight: Self-test, calibration, safety checks
+%%   4. Armed: Motors idle, ready to fly
+%%   5. InFlight: Active flight with RL control
+%%   6. Emergency: Failsafe mode (motors cut)
+%%   7. Error: Unrecoverable error state
+%% 
+%% Sub-States (InFlight):
+%%   - Stabilize: Core RL control loop (100 Hz)
+%%   - Autonomous: Waypoint navigation mode
+%%   - ManualPID: Fallback PID controller
+%% 
+%% Transitions:
+%%   PowerOn → Initialization → Preflight → Armed → InFlight
+%%   InFlight ↔ Armed (landing/takeoff)
+%%   InFlight → Emergency (critical failure)
+%%   Emergency → Error (unrecoverable) or → Preflight (reset)
+%% 
+%% Safety Features:
+%%   - Watchdog timer: detects software hangs
+%%   - Sensor validation: rejects invalid readings
+%%   - RL inference timeout: switches to PID if NN too slow
+%%   - Battery monitor: warns and lands on low voltage
+%%   - Attitude limits: triggers emergency if >45° error
+%%   - Manual kill switch: immediate motor cutoff
+%% 
+%% Timing:
+%%   - Main control loop (Stabilize): 100 Hz (10ms period)
+%%   - Watchdog check: 50 Hz (20ms period)
+%%   - Sensor calibration: 5 seconds during Preflight
+%%   - NN weight loading: ~500ms during Initialization

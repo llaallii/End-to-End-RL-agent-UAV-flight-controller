@@ -1,0 +1,262 @@
+%% D3.4 - MAVLink Message Flow (Sequence Diagram)
+%% UAV Flight Controller with On-Board Reinforcement Learning
+%% Priority 3 - Telemetry Protocol
+%% Placement: 04_WBS_Phase4_HIL_Flight_Control.md (Section 4.5)
+
+sequenceDiagram
+    participant GCS as Ground Control Station<br/>(QGroundControl)
+    participant Telem as Telemetry Radio<br/>(900 MHz)
+    participant FCU as Flight Controller<br/>(MCU Firmware)
+    participant Sensors as Sensor Suite
+    participant RL as RL Inference Engine
+    
+    Note over GCS,RL: Connection Establishment
+    
+    GCS->>Telem: Request connection
+    Telem->>FCU: HEARTBEAT request
+    activate FCU
+    FCU->>FCU: Check system status
+    FCU->>Telem: HEARTBEAT (MAV_TYPE_QUADROTOR)
+    Telem->>GCS: Connection established
+    
+    GCS->>Telem: REQUEST_DATA_STREAM (all streams, 5 Hz)
+    Telem->>FCU: Enable telemetry streams
+    FCU->>FCU: Configure stream rates
+    FCU->>Telem: COMMAND_ACK (success)
+    Telem->>GCS: Telemetry enabled
+    
+    Note over GCS,RL: Normal Telemetry Loop (5 Hz = 200ms period)
+    
+    loop Every 200ms telemetry cycle
+        Note over FCU: Gather telemetry data
+        FCU->>Sensors: Read latest state
+        activate Sensors
+        Sensors-->>FCU: Position, velocity, attitude
+        deactivate Sensors
+        
+        FCU->>RL: Get current action
+        activate RL
+        RL-->>FCU: Motor commands
+        deactivate RL
+        
+        Note over FCU: Prepare MAVLink messages
+        
+        FCU->>FCU: Build ATTITUDE message
+        Note right of FCU: Roll, pitch, yaw<br/>Angular rates
+        
+        FCU->>FCU: Build GLOBAL_POSITION_INT
+        Note right of FCU: Lat, lon, alt<br/>Velocities
+        
+        FCU->>FCU: Build SYS_STATUS
+        Note right of FCU: Battery voltage<br/>Current draw<br/>Health flags
+        
+        FCU->>FCU: Build VFR_HUD
+        Note right of FCU: Airspeed, groundspeed<br/>Heading, throttle
+        
+        Note over FCU,GCS: Transmit telemetry burst
+        FCU->>Telem: HEARTBEAT (every cycle)
+        FCU->>Telem: ATTITUDE
+        FCU->>Telem: GLOBAL_POSITION_INT
+        FCU->>Telem: SYS_STATUS
+        FCU->>Telem: VFR_HUD
+        
+        Telem->>GCS: Forward messages (wireless)
+        Note right of Telem: ~100ms latency<br/>900 MHz radio
+        
+        GCS->>GCS: Update UI displays
+        GCS->>GCS: Log to telemetry file
+    end
+    
+    Note over GCS,RL: Command & Control (Ad-hoc)
+    
+    GCS->>Telem: COMMAND_LONG (MAV_CMD_COMPONENT_ARM_DISARM)
+    Note right of GCS: Operator arms UAV
+    Telem->>FCU: Arm command
+    FCU->>FCU: Safety checks (sensors OK, calibrated)
+    
+    alt Safety checks pass
+        FCU->>FCU: Transition to ARMED state
+        FCU->>Telem: COMMAND_ACK (MAV_RESULT_ACCEPTED)
+        Telem->>GCS: Armed
+        GCS->>GCS: Display "ARMED" status
+        
+    else Safety checks fail
+        FCU->>FCU: Remain in PREFLIGHT state
+        FCU->>Telem: COMMAND_ACK (MAV_RESULT_FAILED)
+        Telem->>GCS: Arm failed
+        GCS->>GCS: Display error message
+        
+        FCU->>Telem: STATUSTEXT ("Arming failed: IMU not calibrated")
+        Telem->>GCS: Show error text
+    end
+    
+    Note over GCS,RL: Parameter Management
+    
+    GCS->>Telem: PARAM_REQUEST_LIST
+    Note right of GCS: Operator wants to view<br/>all parameters
+    Telem->>FCU: Request parameter list
+    FCU->>FCU: Iterate through param storage
+    
+    loop For each parameter (e.g., 50 params)
+        FCU->>Telem: PARAM_VALUE (name, value, index, count)
+        Note right of FCU: Examples:<br/>• PID_ROLL_P = 0.15<br/>• PID_PITCH_I = 0.08<br/>• BATTERY_CAPACITY = 5000
+        Telem->>GCS: Forward parameter
+        GCS->>GCS: Add to parameter list UI
+    end
+    
+    GCS->>GCS: Display parameter editor
+    
+    Note right of GCS: User changes<br/>PID_ROLL_P to 0.18
+    GCS->>Telem: PARAM_SET (PID_ROLL_P, 0.18)
+    Telem->>FCU: Update parameter
+    FCU->>FCU: Validate new value (range check)
+    
+    alt Value valid
+        FCU->>FCU: Update RAM & Flash
+        FCU->>Telem: PARAM_VALUE (PID_ROLL_P, 0.18, ...)
+        Telem->>GCS: Parameter updated
+        GCS->>GCS: Confirm in UI
+        
+    else Value invalid
+        FCU->>Telem: STATUSTEXT ("Invalid param: out of range")
+        Telem->>GCS: Error notification
+    end
+    
+    Note over GCS,RL: Mission Upload (Waypoint Navigation)
+    
+    GCS->>Telem: MISSION_COUNT (5 waypoints)
+    Note right of GCS: User plans mission<br/>with 5 waypoints
+    Telem->>FCU: Prepare for mission upload
+    FCU->>FCU: Clear mission buffer
+    FCU->>Telem: MISSION_REQUEST (seq=0)
+    
+    loop For each waypoint
+        Telem->>FCU: Request next waypoint
+        FCU->>Telem: MISSION_REQUEST (seq=n)
+        Telem->>GCS: Request waypoint n
+        GCS->>Telem: MISSION_ITEM (lat, lon, alt, command)
+        Note right of GCS: Example WP1:<br/>Lat: 37.7749<br/>Lon: -122.4194<br/>Alt: 50m<br/>Cmd: NAV_WAYPOINT
+        Telem->>FCU: Waypoint data
+        FCU->>FCU: Validate & store waypoint
+    end
+    
+    FCU->>FCU: All waypoints received
+    FCU->>Telem: MISSION_ACK (MAV_MISSION_ACCEPTED)
+    Telem->>GCS: Mission upload complete
+    GCS->>GCS: Display mission on map
+    
+    Note over GCS,RL: In-Flight Status Updates (1 Hz detailed)
+    
+    loop Every 1 second (detailed status)
+        FCU->>Telem: RC_CHANNELS (if available)
+        Note right of FCU: Manual RC input<br/>8 channels
+        
+        FCU->>Telem: SERVO_OUTPUT_RAW
+        Note right of FCU: Motor commands<br/>PWM values
+        
+        FCU->>Telem: GPS_RAW_INT
+        Note right of FCU: GPS fix type<br/>Satellite count<br/>HDOP, VDOP
+        
+        FCU->>Telem: SCALED_IMU
+        Note right of FCU: Raw IMU data<br/>Accel, gyro, mag
+        
+        Telem->>GCS: Forward detailed data
+        GCS->>GCS: Update detailed panels
+    end
+    
+    Note over GCS,RL: Emergency / Failsafe
+    
+    FCU->>FCU: Detect battery critical (<3.3V/cell)
+    FCU->>Telem: SYS_STATUS (battery warning flag)
+    FCU->>Telem: STATUSTEXT ("Battery critical: 3.2V/cell")
+    Telem->>GCS: Emergency notification
+    GCS->>GCS: Audio alarm + red warning
+    
+    FCU->>FCU: Trigger emergency shutdown
+    FCU->>Telem: HEARTBEAT (MAV_STATE_EMERGENCY)
+    Telem->>GCS: Emergency state update
+    
+    Note over GCS,RL: Connection Loss / Recovery
+    
+    Note right of GCS: No HEARTBEAT received<br/>for 3 seconds
+    GCS->>GCS: Set connection state = LOST
+    GCS->>GCS: Display "NO TELEMETRY"
+    
+    Note right of FCU: FCU continues autonomous<br/>operation (RL policy active)
+    FCU->>Telem: HEARTBEAT (periodic)
+    Note right of Telem: Radio link restored
+    
+    Telem->>GCS: HEARTBEAT received
+    GCS->>GCS: Connection state = ACTIVE
+    GCS->>GCS: Display "TELEMETRY OK"
+    
+    GCS->>Telem: REQUEST_DATA_STREAM (re-sync)
+    Telem->>FCU: Resume streaming
+    
+    deactivate FCU
+    
+    Note over GCS,RL: MAVLink Protocol Summary
+
+%% MAVLink Message Flow Summary:
+%% 
+%% Connection Establishment:
+%%   1. GCS sends HEARTBEAT request
+%%   2. FCU responds with HEARTBEAT (MAV_TYPE_QUADROTOR)
+%%   3. GCS requests data streams (REQUEST_DATA_STREAM)
+%%   4. FCU enables telemetry (COMMAND_ACK)
+%% 
+%% Telemetry Messages (5 Hz):
+%%   - HEARTBEAT: System status, mode, armed state
+%%   - ATTITUDE: Roll, pitch, yaw, rates
+%%   - GLOBAL_POSITION_INT: GPS position, velocities
+%%   - SYS_STATUS: Battery, CPU load, health flags
+%%   - VFR_HUD: Airspeed, groundspeed, heading, throttle
+%% 
+%% Detailed Status (1 Hz):
+%%   - RC_CHANNELS: Manual RC input
+%%   - SERVO_OUTPUT_RAW: Motor PWM values
+%%   - GPS_RAW_INT: GPS fix, satellites, HDOP
+%%   - SCALED_IMU: Raw sensor data
+%% 
+%% Commands (ad-hoc):
+%%   - COMMAND_LONG: Arm/disarm, mode change, calibration
+%%   - PARAM_SET: Update parameters
+%%   - MISSION_ITEM: Upload waypoints
+%% 
+%% Error Handling:
+%%   - STATUSTEXT: Human-readable error messages
+%%   - COMMAND_ACK: Command success/failure feedback
+%%   - MISSION_ACK: Mission upload result
+%% 
+%% Failsafe:
+%%   - Battery critical → SYS_STATUS warning
+%%   - Connection loss → FCU continues autonomous
+%%   - Emergency state → MAV_STATE_EMERGENCY
+%% 
+%% Protocol Details:
+%%   - Baud rate: 57600 or 115200 (UART)
+%%   - Radio: 900 MHz or 433 MHz (100ms latency)
+%%   - Message format: Binary, CRC-16
+%%   - Max payload: 255 bytes per message
+%%   - Packet overhead: 8-14 bytes (v1/v2)
+%% 
+%% MAVLink Versions:
+%%   - MAVLink 1.0: Legacy, widely supported
+%%   - MAVLink 2.0: Extended features, signing, longer payloads
+%% 
+%% Common Message IDs:
+%%   - 0: HEARTBEAT
+%%   - 30: ATTITUDE
+%%   - 33: GLOBAL_POSITION_INT
+%%   - 1: SYS_STATUS
+%%   - 74: VFR_HUD
+%%   - 76: COMMAND_LONG
+%%   - 253: STATUSTEXT
+%%   - 20-22: PARAM_* messages
+%%   - 39-44: MISSION_* messages
+%% 
+%% Integration Points:
+%%   - GCS: QGroundControl, Mission Planner, MAVProxy
+%%   - Telemetry: 3DR Radio, RFD900, XBee
+%%   - Firmware: Custom UAV firmware with MAVLink support
+%%   - Logging: Ground-side .tlog files, airside black box

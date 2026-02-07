@@ -1,0 +1,658 @@
+%% D2.4 - Testing and Validation Workflow
+%% UAV Flight Controller with On-Board Reinforcement Learning
+%% Priority 1 - Critical Quality Assurance
+%% Placement: 06_WBS_Phase6_Integration_Validation.md (Section 6.3)
+
+flowchart TD
+    START([Start Testing Phase]) --> PLAN[Test Plan Development]
+    
+    subgraph "Phase 1: Unit Testing (Week 1-2)"
+        PLAN --> UNIT_PLAN[Define Unit Test Scope]
+        
+        UNIT_PLAN --> UNIT_HAL[HAL Layer Tests]
+        UNIT_PLAN --> UNIT_SENSORS[Sensor Driver Tests]
+        UNIT_PLAN --> UNIT_CONTROL[Control Algorithm Tests]
+        UNIT_PLAN --> UNIT_NN[NN Inference Tests]
+        UNIT_PLAN --> UNIT_SAFETY[Safety System Tests]
+        
+        UNIT_HAL --> UNIT_HAL_SPI[SPI Communication]
+        UNIT_HAL --> UNIT_HAL_I2C[I2C Communication]
+        UNIT_HAL --> UNIT_HAL_UART[UART Communication]
+        UNIT_HAL --> UNIT_HAL_PWM[PWM Generation]
+        
+        UNIT_SENSORS --> UNIT_IMU[IMU Driver<br/>MPU-6050/ICM-20948]
+        UNIT_SENSORS --> UNIT_BARO[Barometer<br/>BMP388]
+        UNIT_SENSORS --> UNIT_GPS[GPS<br/>UBlox M8N]
+        UNIT_SENSORS --> UNIT_MAG[Magnetometer<br/>QMC5883L]
+        
+        UNIT_CONTROL --> UNIT_PID[PID Controller]
+        UNIT_CONTROL --> UNIT_MIXER[Motor Mixer]
+        UNIT_CONTROL --> UNIT_STATE_EST[State Estimator]
+        
+        UNIT_NN --> UNIT_NN_FWD[Forward Pass]
+        UNIT_NN --> UNIT_NN_LOAD[Weight Loading]
+        UNIT_NN --> UNIT_NN_QUANT[Quantization]
+        
+        UNIT_SAFETY --> UNIT_FAULT_DET[Fault Detection]
+        UNIT_SAFETY --> UNIT_FAILSAFE[Failsafe Logic]
+        UNIT_SAFETY --> UNIT_ENVELOPE[Envelope Protection]
+        
+        UNIT_HAL_PWM --> UNIT_COLLECT[Collect Results]
+        UNIT_MAG --> UNIT_COLLECT
+        UNIT_MIXER --> UNIT_COLLECT
+        UNIT_NN_QUANT --> UNIT_COLLECT
+        UNIT_ENVELOPE --> UNIT_COLLECT
+        
+        UNIT_COLLECT --> UNIT_REPORT[Unit Test Report]
+        UNIT_REPORT --> UNIT_PASS{All tests pass?}
+        UNIT_PASS -->|No| UNIT_FIX[Fix Bugs]
+        UNIT_FIX --> UNIT_PLAN
+        UNIT_PASS -->|Yes| UNIT_DONE[Unit Testing Complete ✓]
+    end
+    
+    subgraph "Phase 2: Integration Testing (Week 3-4)"
+        UNIT_DONE --> INT_PLAN[Define Integration Scope]
+        
+        INT_PLAN --> INT_SENSOR_STACK[Sensor Stack Integration]
+        INT_PLAN --> INT_CONTROL_LOOP[Control Loop Integration]
+        INT_PLAN --> INT_DATA_FLOW[Data Flow Integration]
+        INT_PLAN --> INT_SAFETY_INT[Safety Integration]
+        
+        INT_SENSOR_STACK --> INT_SENS_READ[Multi-sensor Reading<br/>IMU+Baro+GPS+Mag]
+        INT_SENS_READ --> INT_SENS_FUSION[Sensor Fusion<br/>Complementary Filter]
+        
+        INT_CONTROL_LOOP --> INT_LOOP_PID[PID Control Loop<br/>100 Hz]
+        INT_CONTROL_LOOP --> INT_LOOP_RL[RL Control Loop<br/>100 Hz]
+        INT_LOOP_PID --> INT_LOOP_SWITCH[Mode Switching<br/>PID ↔ RL]
+        INT_LOOP_RL --> INT_LOOP_SWITCH
+        
+        INT_DATA_FLOW --> INT_RTOS_TASKS[RTOS Task Communication]
+        INT_DATA_FLOW --> INT_DMA[DMA Transfers]
+        INT_DATA_FLOW --> INT_QUEUES[Message Queues]
+        
+        INT_SAFETY_INT --> INT_SAFETY_MONITOR[Safety Monitor Integration]
+        INT_SAFETY_INT --> INT_WATCHDOG[Watchdog Integration]
+        
+        INT_SENS_FUSION --> INT_COLLECT[Collect Results]
+        INT_LOOP_SWITCH --> INT_COLLECT
+        INT_QUEUES --> INT_COLLECT
+        INT_WATCHDOG --> INT_COLLECT
+        
+        INT_COLLECT --> INT_REPORT[Integration Report]
+        INT_REPORT --> INT_PASS{All tests pass?}
+        INT_PASS -->|No| INT_FIX[Debug Integration Issues]
+        INT_FIX --> INT_PLAN
+        INT_PASS -->|Yes| INT_DONE[Integration Testing Complete ✓]
+    end
+    
+    subgraph "Phase 3: SITL Validation (Week 5-8)"
+        INT_DONE --> SITL_SETUP[Setup Gazebo Environment]
+        
+        SITL_SETUP --> SITL_SCENARIOS[Define Test Scenarios]
+        
+        SITL_SCENARIOS --> SITL_HOVER[Hover Test<br/>10s stable hover]
+        SITL_SCENARIOS --> SITL_WAYPOINT[Waypoint Navigation<br/>4 waypoints, square]
+        SITL_SCENARIOS --> SITL_DISTURBANCE[Disturbance Rejection<br/>Wind gusts]
+        SITL_SCENARIOS --> SITL_TRACKING[Trajectory Tracking<br/>Circle @ 5m radius]
+        SITL_SCENARIOS --> SITL_FAILSAFE[Failsafe Scenarios<br/>Battery/GPS/RC loss]
+        
+        SITL_HOVER --> SITL_METRICS_H[Metrics: Position RMS error]
+        SITL_WAYPOINT --> SITL_METRICS_W[Metrics: Waypoint accuracy]
+        SITL_DISTURBANCE --> SITL_METRICS_D[Metrics: Recovery time]
+        SITL_TRACKING --> SITL_METRICS_T[Metrics: Tracking error]
+        SITL_FAILSAFE --> SITL_METRICS_F[Metrics: Safe landing?]
+        
+        SITL_METRICS_H --> SITL_BASELINE[Compare vs PID Baseline]
+        SITL_METRICS_W --> SITL_BASELINE
+        SITL_METRICS_D --> SITL_BASELINE
+        SITL_METRICS_T --> SITL_BASELINE
+        SITL_METRICS_F --> SITL_BASELINE
+        
+        SITL_BASELINE --> SITL_RL_PERF{RL ≥ PID performance?}
+        SITL_RL_PERF -->|No| SITL_RETRAIN[Retrain RL Policy]
+        SITL_RETRAIN --> SITL_SCENARIOS
+        SITL_RL_PERF -->|Yes| SITL_REPORT[SITL Validation Report]
+        
+        SITL_REPORT --> SITL_DONE[SITL Validation Complete ✓]
+    end
+    
+    subgraph "Phase 4: HIL Validation (Week 9-12)"
+        SITL_DONE --> HIL_SETUP[Setup HIL Test Rig]
+        
+        HIL_SETUP --> HIL_HW_CHECK[Hardware Checkout]
+        HIL_HW_CHECK --> HIL_SENSORS[Verify All Sensors]
+        HIL_HW_CHECK --> HIL_MOTORS[Verify Motor Outputs]
+        HIL_HW_CHECK --> HIL_POWER[Verify Power System]
+        
+        HIL_POWER --> HIL_SCENARIOS[Define HIL Test Scenarios]
+        
+        HIL_SCENARIOS --> HIL_HOVER[HIL Hover Test<br/>Real-time firmware]
+        HIL_SCENARIOS --> HIL_WAYPOINT[HIL Waypoint Test<br/>Gazebo physics]
+        HIL_SCENARIOS --> HIL_TIMING[Real-time Validation<br/>Loop timing <10ms]
+        HIL_SCENARIOS --> HIL_FAULTS[Fault Injection<br/>Sensor failures]
+        HIL_SCENARIOS --> HIL_STRESS[Stress Test<br/>8h continuous]
+        
+        HIL_HOVER --> HIL_METRICS_H[Metrics: Latency, jitter]
+        HIL_WAYPOINT --> HIL_METRICS_W[Metrics: Control accuracy]
+        HIL_TIMING --> HIL_METRICS_T[Metrics: Deadline misses]
+        HIL_FAULTS --> HIL_METRICS_F[Metrics: Failsafe correct?]
+        HIL_STRESS --> HIL_METRICS_S[Metrics: Memory leaks?]
+        
+        HIL_METRICS_S --> HIL_COMPARE[Compare SITL vs HIL]
+        HIL_COMPARE --> HIL_DELTA{Performance delta <10%?}
+        HIL_DELTA -->|No| HIL_DEBUG[Debug Real-time Issues]
+        HIL_DEBUG --> HIL_SCENARIOS
+        HIL_DELTA -->|Yes| HIL_REPORT[HIL Validation Report]
+        
+        HIL_REPORT --> HIL_DONE[HIL Validation Complete ✓]
+    end
+    
+    subgraph "Phase 5: Bench Testing (Week 13-14)"
+        HIL_DONE --> BENCH_SETUP[Setup Bench Test Rig]
+        
+        BENCH_SETUP --> BENCH_TETHER[Tether UAV<br/>Prevent liftoff]
+        BENCH_TETHER --> BENCH_PROPS_OFF[Remove Propellers<br/>Initial tests]
+        
+        BENCH_PROPS_OFF --> BENCH_POWER_ON[Power-on Test]
+        BENCH_POWER_ON --> BENCH_BOOT[Verify Boot Sequence<br/>2s expected]
+        BENCH_BOOT --> BENCH_SENSORS_LIVE[Verify Live Sensor Data]
+        
+        BENCH_SENSORS_LIVE --> BENCH_MOTORS_OFF[Motor Test<br/>No props, low throttle]
+        BENCH_MOTORS_OFF --> BENCH_ESC[Verify ESC Response<br/>PWM/DShot]
+        
+        BENCH_ESC --> BENCH_PROPS_ON[Install Propellers<br/>⚠️ DANGER]
+        BENCH_PROPS_ON --> BENCH_TETHERED[Tethered Thrust Test]
+        
+        BENCH_TETHERED --> BENCH_THRUST[Measure Thrust<br/>Load cell]
+        BENCH_THRUST --> BENCH_BALANCE[Check Motor Balance<br/>±5% tolerance]
+        BENCH_BALANCE --> BENCH_VIBRATION[Check Vibrations<br/>Accelerometer]
+        
+        BENCH_VIBRATION --> BENCH_SAFE{Safe to fly?}
+        BENCH_SAFE -->|No| BENCH_FIX[Fix Mechanical Issues]
+        BENCH_FIX --> BENCH_PROPS_OFF
+        BENCH_SAFE -->|Yes| BENCH_REPORT[Bench Test Report]
+        
+        BENCH_REPORT --> BENCH_DONE[Bench Testing Complete ✓]
+    end
+    
+    subgraph "Phase 6: Flight Testing (Week 15-20)"
+        BENCH_DONE --> FLIGHT_PREP[Flight Test Preparation]
+        
+        FLIGHT_PREP --> FLIGHT_SITE[Select Test Site<br/>Open field, no obstacles]
+        FLIGHT_SITE --> FLIGHT_SAFETY[Safety Briefing<br/>Team roles, procedures]
+        FLIGHT_SAFETY --> FLIGHT_EQUIPMENT[Equipment Check<br/>Fire extinguisher, first aid]
+        
+        FLIGHT_EQUIPMENT --> FLIGHT_PROGRESSION[Progressive Test Sequence]
+        
+        FLIGHT_PROGRESSION --> FLIGHT_L1[Level 1: Ground Tests<br/>Propellers on, tethered]
+        FLIGHT_L1 --> FLIGHT_L1_CHECKS[- Pre-flight checks<br/>- Arming test<br/>- Throttle ramp<br/>- Emergency stop]
+        
+        FLIGHT_L1_CHECKS --> FLIGHT_L1_PASS{Pass?}
+        FLIGHT_L1_PASS -->|No| FLIGHT_L1_FIX[Fix Issues]
+        FLIGHT_L1_FIX --> FLIGHT_L1
+        FLIGHT_L1_PASS -->|Yes| FLIGHT_L2[Level 2: Hover Tests<br/>0.5m altitude, 10s]
+        
+        FLIGHT_L2 --> FLIGHT_L2_TESTS[- Manual takeoff<br/>- Stabilization<br/>- Manual landing<br/>- Failsafe test]
+        
+        FLIGHT_L2_TESTS --> FLIGHT_L2_PASS{Pass?}
+        FLIGHT_L2_PASS -->|No| FLIGHT_L2_FIX[Tune Controller]
+        FLIGHT_L2_FIX --> FLIGHT_L2
+        FLIGHT_L2_PASS -->|Yes| FLIGHT_L3[Level 3: Navigation<br/>5m altitude, waypoints]
+        
+        FLIGHT_L3 --> FLIGHT_L3_TESTS[- Auto takeoff<br/>- Waypoint nav<br/>- RTL function<br/>- Auto landing]
+        
+        FLIGHT_L3_TESTS --> FLIGHT_L3_PASS{Pass?}
+        FLIGHT_L3_PASS -->|No| FLIGHT_L3_FIX[Debug Navigation]
+        FLIGHT_L3_FIX --> FLIGHT_L3
+        FLIGHT_L3_PASS -->|Yes| FLIGHT_L4[Level 4: Envelope Test<br/>10-20m altitude, full speed]
+        
+        FLIGHT_L4 --> FLIGHT_L4_TESTS[- Max altitude<br/>- Max velocity<br/>- Aggressive maneuvers<br/>- Geofence test]
+        
+        FLIGHT_L4_TESTS --> FLIGHT_L4_PASS{Pass?}
+        FLIGHT_L4_PASS -->|No| FLIGHT_L4_FIX[Tune Limits]
+        FLIGHT_L4_FIX --> FLIGHT_L4
+        FLIGHT_L4_PASS -->|Yes| FLIGHT_L5[Level 5: Endurance<br/>30 min flight]
+        
+        FLIGHT_L5 --> FLIGHT_L5_TESTS[- Battery monitoring<br/>- Thermal monitoring<br/>- Long mission<br/>- Low battery RTL]
+        
+        FLIGHT_L5_TESTS --> FLIGHT_FINAL_REPORT[Flight Test Report]
+        FLIGHT_FINAL_REPORT --> FLIGHT_DONE[Flight Testing Complete ✓]
+    end
+    
+    subgraph "Phase 7: Performance Validation (Week 21-22)"
+        FLIGHT_DONE --> PERF_ANALYSIS[Performance Analysis]
+        
+        PERF_ANALYSIS --> PERF_METRICS[Define Success Metrics]
+        
+        PERF_METRICS --> PERF_M1[Position accuracy<br/>Target: RMS <0.5m]
+        PERF_METRICS --> PERF_M2[Attitude accuracy<br/>Target: RMS <5°]
+        PERF_METRICS --> PERF_M3[RL vs PID comparison<br/>Target: RL ≥ PID]
+        PERF_METRICS --> PERF_M4[Control loop timing<br/>Target: 100 Hz ±5%]
+        PERF_METRICS --> PERF_M5[NN inference time<br/>Target: <5ms]
+        PERF_METRICS --> PERF_M6[Battery efficiency<br/>Target: >15 min flight]
+        
+        PERF_M6 --> PERF_COLLECT[Collect All Data]
+        PERF_COLLECT --> PERF_ANALYZE[Statistical Analysis]
+        
+        PERF_ANALYZE --> PERF_PASS{All metrics meet targets?}
+        PERF_PASS -->|No| PERF_OPTIMIZE[Optimization Phase]
+        PERF_OPTIMIZE --> PERF_RETUNE[Retune/Retrain]
+        PERF_RETUNE --> FLIGHT_L3
+        
+        PERF_PASS -->|Yes| PERF_REPORT[Performance Report]
+        PERF_REPORT --> PERF_DONE[Performance Validation Complete ✓]
+    end
+    
+    subgraph "Phase 8: Acceptance Testing (Week 23-24)"
+        PERF_DONE --> ACCEPT_PLAN[Acceptance Test Plan]
+        
+        ACCEPT_PLAN --> ACCEPT_REQ[Review Requirements]
+        ACCEPT_REQ --> ACCEPT_TRACE[Traceability Matrix]
+        
+        ACCEPT_TRACE --> ACCEPT_DEMO[Demonstration Flights]
+        ACCEPT_DEMO --> ACCEPT_D1[Demo 1: Autonomous Mission<br/>10 waypoints, 5 min]
+        ACCEPT_DEMO --> ACCEPT_D2[Demo 2: RL Performance<br/>Aggressive maneuver]
+        ACCEPT_DEMO --> ACCEPT_D3[Demo 3: Failsafe<br/>Simulated failures]
+        ACCEPT_DEMO --> ACCEPT_D4[Demo 4: Envelope<br/>Full capability]
+        
+        ACCEPT_D4 --> ACCEPT_REVIEW[Stakeholder Review]
+        
+        ACCEPT_REVIEW --> ACCEPT_PASS{Acceptance criteria met?}
+        ACCEPT_PASS -->|No| ACCEPT_ISSUES[Document Issues]
+        ACCEPT_ISSUES --> ACCEPT_FIX[Fix Critical Issues]
+        ACCEPT_FIX --> ACCEPT_DEMO
+        
+        ACCEPT_PASS -->|Yes| ACCEPT_SIGN[Sign-off]
+        ACCEPT_SIGN --> ACCEPT_DONE[Acceptance Complete ✓]
+    end
+    
+    ACCEPT_DONE --> FINAL_REPORT[Final Validation Report]
+    FINAL_REPORT --> RELEASE[Release for Production]
+    RELEASE --> END([Testing Complete])
+    
+    style START fill:#00ff00,stroke:#00cc00,color:#000
+    style END fill:#00ff00,stroke:#00cc00,color:#000
+    
+    style UNIT_DONE fill:#4A90E2,stroke:#2E5C8A,color:#fff
+    style INT_DONE fill:#4A90E2,stroke:#2E5C8A,color:#fff
+    style SITL_DONE fill:#4A90E2,stroke:#2E5C8A,color:#fff
+    style HIL_DONE fill:#4A90E2,stroke:#2E5C8A,color:#fff
+    style BENCH_DONE fill:#4A90E2,stroke:#2E5C8A,color:#fff
+    style FLIGHT_DONE fill:#4A90E2,stroke:#2E5C8A,color:#fff
+    style PERF_DONE fill:#4A90E2,stroke:#2E5C8A,color:#fff
+    style ACCEPT_DONE fill:#4A90E2,stroke:#2E5C8A,color:#fff
+    
+    style FLIGHT_PREP fill:#ff9900,stroke:#cc6600,color:#000
+    style BENCH_PROPS_ON fill:#ff0000,stroke:#990000,color:#fff
+    style FLIGHT_SAFETY fill:#ff9900,stroke:#cc6600,color:#000
+
+%% Testing and Validation Workflow Summary:
+%% 
+%% Phase 1: Unit Testing (Week 1-2, ~80 hours)
+%%   Objective: Verify individual components function correctly
+%%   
+%%   Categories:
+%%   - HAL Layer: SPI, I2C, UART, PWM drivers
+%%   - Sensor Drivers: IMU, Baro, GPS, Mag
+%%   - Control Algorithms: PID, Mixer, State Estimator
+%%   - NN Inference: Forward pass, weight loading, quantization
+%%   - Safety Systems: Fault detection, failsafe, envelope protection
+%%   
+%%   Tools:
+%%   - Unity Test Framework (C)
+%%   - Google Test (C++)
+%%   - Mock objects for hardware abstraction
+%%   - Code coverage analysis (target >80%)
+%%   
+%%   Success Criteria:
+%%   - 100% of unit tests pass
+%%   - Code coverage >80%
+%%   - No memory leaks detected
+%%   - All boundary conditions tested
+%%   
+%%   Deliverables:
+%%   - Unit test report with pass/fail status
+%%   - Code coverage report
+%%   - Bug tracking log
+%% 
+%% Phase 2: Integration Testing (Week 3-4, ~80 hours)
+%%   Objective: Verify components work together correctly
+%%   
+%%   Focus Areas:
+%%   - Sensor Stack: Multi-sensor reading & fusion
+%%   - Control Loop: PID and RL @ 100 Hz, mode switching
+%%   - Data Flow: RTOS tasks, DMA, message queues
+%%   - Safety: Safety monitor, watchdog, system health
+%%   
+%%   Test Scenarios:
+%%   - Sensor fusion accuracy (complementary filter)
+%%   - Control loop timing jitter (<1ms)
+%%   - Mode switching latency (<10ms)
+%%   - Inter-task communication (queue overflow?)
+%%   - Safety response time (<1ms for critical faults)
+%%   
+%%   Success Criteria:
+%%   - All integration tests pass
+%%   - Control loop maintains 100 Hz ±5%
+%%   - No task starvation or deadlocks
+%%   - Safety systems respond within spec
+%%   
+%%   Deliverables:
+%%   - Integration test report
+%%   - System timing analysis
+%%   - Task scheduling validation
+%% 
+%% Phase 3: SITL Validation (Week 5-8, ~160 hours)
+%%   Objective: Validate complete system in simulation
+%%   
+%%   Environment: Gazebo 11 + ROS 2 Humble
+%%   
+%%   Test Scenarios:
+%%   1. Hover Test: 10s stable hover, position RMS <0.3m
+%%   2. Waypoint Navigation: 4 waypoints (square), accuracy <0.5m
+%%   3. Disturbance Rejection: Wind gusts (5 m/s), recovery <3s
+%%   4. Trajectory Tracking: Circle (5m radius), tracking error <0.4m
+%%   5. Failsafe Scenarios:
+%%      - Battery low → RTL initiated
+%%      - GPS lost → Emergency land
+%%      - RC signal lost → Continue autonomous
+%%   
+%%   Baseline Comparison:
+%%   - RL policy vs PID controller
+%%   - Metrics: Position error, control effort, settling time
+%%   - Requirement: RL ≥ PID performance
+%%   
+%%   Success Criteria:
+%%   - All scenarios pass without crashes
+%%   - RL meets or exceeds PID baseline
+%%   - Failsafes trigger correctly
+%%   - No software exceptions/crashes
+%%   
+%%   Deliverables:
+%%   - SITL validation report
+%%   - Performance comparison (RL vs PID)
+%%   - Video recordings of test scenarios
+%%   - Flight logs for analysis
+%% 
+%% Phase 4: HIL Validation (Week 9-12, ~160 hours)
+%%   Objective: Validate firmware on real hardware with simulated physics
+%%   
+%%   Setup:
+%%   - STM32F7 dev board or custom PCB
+%%   - Gazebo simulation on PC
+%%   - USB/UART communication bridge
+%%   - Real sensors (IMU, Baro, GPS, Mag)
+%%   
+%%   Test Scenarios:
+%%   1. HIL Hover: Same as SITL, real-time firmware
+%%   2. HIL Waypoint: Verify navigation with real sensor noise
+%%   3. Real-time Validation: Control loop <10ms, deadline analysis
+%%   4. Fault Injection: Disconnect sensors, verify failsafe
+%%   5. Stress Test: 8-hour continuous operation, memory leak check
+%%   
+%%   SITL vs HIL Comparison:
+%%   - Latency: SITL ~1ms, HIL <5ms (target)
+%%   - Jitter: HIL should be <1ms
+%%   - Performance delta: <10% acceptable
+%%   
+%%   Success Criteria:
+%%   - Control loop timing: 100 Hz ±5%, <10ms latency
+%%   - No deadline misses under normal load
+%%   - Failsafes respond correctly to faults
+%%   - No memory leaks after 8h stress test
+%%   - Performance within 10% of SITL
+%%   
+%%   Deliverables:
+%%   - HIL validation report
+%%   - Real-time performance analysis
+%%   - Fault injection test results
+%%   - Comparison: SITL vs HIL
+%% 
+%% Phase 5: Bench Testing (Week 13-14, ~80 hours)
+%%   Objective: Validate hardware on bench before first flight
+%%   
+%%   Safety Equipment:
+%%   - Tether rig (prevents liftoff)
+%%   - Fire extinguisher (LiPo fire risk)
+%%   - Eye protection (propeller safety)
+%%   - Grounding strap (ESD protection)
+%%   
+%%   Test Progression:
+%%   1. Power-on Test (propellers OFF):
+%%      - Verify boot sequence (~2s)
+%%      - Check sensor data quality
+%%      - Verify telemetry link
+%%   
+%%   2. Motor Test (propellers OFF):
+%%      - Low throttle (10-20%)
+%%      - Verify ESC response (PWM/DShot)
+%%      - Check motor direction
+%%   
+%%   3. Tethered Thrust Test (propellers ON, tethered):
+%%      - Measure thrust with load cell
+%%      - Verify motor balance (±5% tolerance)
+%%      - Check vibration levels (accelerometer)
+%%      - Test emergency stop
+%%   
+%%   Success Criteria:
+%%   - Boot sequence completes without errors
+%%   - All sensors provide valid data
+%%   - Motors respond correctly to commands
+%%   - Thrust balanced within ±5%
+%%   - Vibrations within acceptable range (<0.5g RMS)
+%%   - Emergency stop works (<1ms)
+%%   
+%%   Deliverables:
+%%   - Bench test report
+%%   - Thrust measurement data
+%%   - Vibration analysis
+%%   - Pre-flight checklist (validated)
+%% 
+%% Phase 6: Flight Testing (Week 15-20, ~240 hours)
+%%   Objective: Progressive flight envelope expansion
+%%   
+%%   Safety Requirements:
+%%   - Test site: Open field, 100m radius clear zone
+%%   - Team: Pilot, safety observer, telemetry operator
+%%   - Equipment: Fire extinguisher, first aid kit, radio backup
+%%   - Weather: Wind <5 m/s, no rain, good visibility
+%%   
+%%   Progressive Test Levels:
+%%   
+%%   Level 1: Ground Tests (tethered, propellers on)
+%%   - Pre-flight checks (sensors, GPS, battery)
+%%   - Arming test
+%%   - Throttle ramp (0-50%)
+%%   - Emergency stop test
+%%   Success: No uncommanded movement, stop works
+%%   
+%%   Level 2: Hover Tests (0.5m altitude, 10s duration)
+%%   - Manual takeoff (pilot control)
+%%   - Stabilization test (hold position)
+%%   - Manual landing
+%%   - Failsafe test (RC signal loss)
+%%   Success: Stable hover ±0.5m, soft landing, failsafe triggers
+%%   
+%%   Level 3: Navigation Tests (5m altitude, waypoint mission)
+%%   - Auto takeoff
+%%   - 4-waypoint square mission
+%%   - Return-to-launch (RTL)
+%%   - Auto landing
+%%   Success: Waypoint accuracy <1m, RTL works, soft landing
+%%   
+%%   Level 4: Envelope Tests (10-20m altitude, full capability)
+%%   - Max altitude test (100m limit)
+%%   - Max velocity test (15 m/s limit)
+%%   - Aggressive maneuvers (RL policy stress test)
+%%   - Geofence test (500m radius)
+%%   Success: All limits respected, geofence prevents breach
+%%   
+%%   Level 5: Endurance Test (30 min flight)
+%%   - Battery monitoring (voltage, current, mAh)
+%%   - Thermal monitoring (MCU, ESC temperature)
+%%   - Long autonomous mission
+%%   - Low battery RTL (triggered at 20% remaining)
+%%   Success: Complete mission, thermal within limits, RTL on low battery
+%%   
+%%   Each level requires:
+%%   - Pre-flight briefing
+%%   - Go/no-go decision (weather, equipment)
+%%   - Post-flight debrief
+%%   - Log analysis
+%%   - Issues documented & resolved before next level
+%%   
+%%   Deliverables:
+%%   - Flight test report (each level)
+%%   - Flight logs (telemetry data)
+%%   - Video recordings
+%%   - Lessons learned document
+%% 
+%% Phase 7: Performance Validation (Week 21-22, ~80 hours)
+%%   Objective: Quantitative performance assessment
+%%   
+%%   Success Metrics:
+%%   1. Position Accuracy:
+%%      - Hover: RMS error <0.5m (x, y, z)
+%%      - Waypoint: Arrival accuracy <1m
+%%   
+%%   2. Attitude Accuracy:
+%%      - Hover: RMS error <5° (roll, pitch)
+%%      - Maneuvers: Peak error <15°
+%%   
+%%   3. RL vs PID Comparison:
+%%      - Position tracking: RL ≥ PID
+%%      - Control smoothness: RL ≥ PID (lower jerk)
+%%      - Energy efficiency: RL ≥ PID (lower battery drain)
+%%   
+%%   4. Real-time Performance:
+%%      - Control loop: 100 Hz ±5%
+%%      - NN inference: <5ms (95th percentile)
+%%      - Sensor update: IMU 1kHz, GPS 10Hz
+%%   
+%%   5. Battery Efficiency:
+%%      - Hover time: >15 min (3S 2200mAh)
+%%      - Mission time: >10 min (waypoint navigation)
+%%   
+%%   6. Reliability:
+%%      - Successful flights: >95% (20+ flights)
+%%      - Failsafe correct operation: 100%
+%%      - No crashes due to software bugs
+%%   
+%%   Analysis Methods:
+%%   - Statistical analysis (mean, std dev, RMS)
+%%   - Flight log post-processing
+%%   - Comparison plots (RL vs PID)
+%%   - Frequency analysis (control loop jitter)
+%%   
+%%   Success Criteria:
+%%   - All 6 metrics meet or exceed targets
+%%   - RL demonstrates advantage over PID
+%%   - Real-time constraints satisfied
+%%   - Reliability >95%
+%%   
+%%   Deliverables:
+%%   - Performance validation report
+%%   - Statistical analysis results
+%%   - Comparison plots and charts
+%%   - Recommendations for optimization
+%% 
+%% Phase 8: Acceptance Testing (Week 23-24, ~80 hours)
+%%   Objective: Final stakeholder approval
+%%   
+%%   Acceptance Test Plan:
+%%   - Review original requirements (from WBS)
+%%   - Create traceability matrix (requirement → test → result)
+%%   - Define acceptance criteria
+%%   - Schedule demo flights
+%%   
+%%   Demonstration Flights:
+%%   
+%%   Demo 1: Autonomous Mission
+%%   - 10-waypoint mission
+%%   - 5 min duration
+%%   - Full autonomous (takeoff → mission → RTL → land)
+%%   - Success: Complete mission, accuracy <1m, soft landing
+%%   
+%%   Demo 2: RL Performance
+%%   - Aggressive maneuver (fast figure-8)
+%%   - RL policy demonstrates smooth control
+%%   - Comparison: Show RL vs PID performance
+%%   - Success: RL outperforms PID, stable flight
+%%   
+%%   Demo 3: Failsafe Demonstration
+%%   - Simulated battery low (commanded)
+%%   - Simulated GPS failure (disabled)
+%%   - Simulated RC loss (transmitter off)
+%%   - Success: Correct failsafe action each time
+%%   
+%%   Demo 4: Envelope Demonstration
+%%   - Max altitude (100m)
+%%   - Max velocity (15 m/s)
+%%   - Geofence test (approach boundary)
+%%   - Success: All limits enforced, no violations
+%%   
+%%   Stakeholder Review:
+%%   - Present test results
+%%   - Demonstrate capabilities
+%%   - Address questions/concerns
+%%   - Document any remaining issues
+%%   
+%%   Acceptance Criteria:
+%%   - All requirements met (100% traceability)
+%%   - All demos successful
+%%   - Performance meets targets
+%%   - No critical bugs outstanding
+%%   - Documentation complete
+%%   
+%%   Sign-off:
+%%   - Stakeholder approval
+%%   - Release for production (if applicable)
+%%   - Transition to maintenance phase
+%%   
+%%   Deliverables:
+%%   - Final validation report
+%%   - Traceability matrix
+%%   - Demo flight recordings
+%%   - Sign-off documentation
+%% 
+%% Testing Tools & Infrastructure:
+%%   - Unit tests: Unity, Google Test
+%%   - Code coverage: gcov, lcov
+%%   - Static analysis: Cppcheck, Clang-Tidy
+%%   - SITL: Gazebo 11, ROS 2 Humble
+%%   - HIL: Custom bridge, STM32CubeIDE
+%%   - Flight logs: MAVLink, SD card logging
+%%   - Analysis: Python (Pandas, Matplotlib), MATLAB
+%%   - Version control: Git, GitHub
+%%   - Issue tracking: GitHub Issues, Jira
+%%   - Documentation: Markdown, Doxygen
+%% 
+%% Risk Management:
+%%   - Backup hardware (spare flight controller, motors, props)
+%%   - Weather monitoring (postpone if wind >5 m/s)
+%%   - Progressive testing (don't skip levels)
+%%   - Daily go/no-go decisions
+%%   - Lesson learned after each flight
+%%   - Safety first culture (abort if any doubt)
+%% 
+%% Success Criteria Summary:
+%%   - Unit tests: 100% pass, >80% coverage
+%%   - Integration: No deadlocks, 100 Hz control loop
+%%   - SITL: RL ≥ PID, all scenarios pass
+%%   - HIL: <10% performance delta vs SITL
+%%   - Bench: Thrust balanced, vibrations OK
+%%   - Flight: 20+ successful flights, >95% success rate
+%%   - Performance: All 6 metrics meet targets
+%%   - Acceptance: Stakeholder sign-off
+%% 
+%% Timeline: 24 weeks total
+%%   - Week 1-2: Unit testing
+%%   - Week 3-4: Integration testing
+%%   - Week 5-8: SITL validation
+%%   - Week 9-12: HIL validation
+%%   - Week 13-14: Bench testing
+%%   - Week 15-20: Flight testing (progressive)
+%%   - Week 21-22: Performance validation
+%%   - Week 23-24: Acceptance testing
+%% 
+%% Total Effort: ~960 hours (~6 person-months)

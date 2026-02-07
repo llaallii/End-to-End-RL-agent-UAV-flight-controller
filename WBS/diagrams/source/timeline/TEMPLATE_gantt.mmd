@@ -1,0 +1,48 @@
+%% Gantt Chart Template
+%% Use this template for project schedules and timelines
+
+gantt
+    title Project Timeline
+    dateFormat YYYY-MM-DD
+    
+    %% Define sections (phases, teams, or work streams)
+    section Phase 1: Infrastructure
+    Requirements Elicitation    :a1, 2026-02-01, 3d
+    Requirements Documentation   :a2, after a1, 2d
+    CI/CD Setup                  :a3, 2026-02-01, 5d
+    Documentation Framework      :a4, after a2, 3d
+    Stage Gate 1                 :milestone, m1, after a4, 0d
+    
+    section Phase 2: SITL Development
+    Simulation Environment       :b1, after m1, 10d
+    UAV Dynamics Model          :b2, after b1, 15d
+    Sensor Simulation           :b3, after b1, 10d
+    Baseline Controller         :b4, after b2, 10d
+    SITL Verification           :b5, after b4, 7d
+    Stage Gate 2                :milestone, m2, after b5, 0d
+    
+    section Phase 3: RL Control
+    RL Framework Integration    :c1, after m2, 7d
+    Training Environment        :c2, after c1, 10d
+    Policy Architecture         :c3, after c2, 7d
+    Training Iteration 1        :c4, after c3, 14d
+    Training Iteration 2        :c5, after c4, 14d
+    Performance Evaluation      :c6, after c5, 10d
+    Stage Gate 3                :milestone, m3, after c6, 0d
+    
+    section Phase 4: HIL Integration
+    MCU Selection              :d1, after m3, 5d
+    Firmware Architecture      :d2, after d1, 7d
+    RL Inference Porting       :d3, after d2, 7d
+    HIL Interface             :d4, after d2, 7d
+    Real-Time Validation      :d5, after d3, 7d
+    Stage Gate 4              :milestone, m4, after d5, 0d
+
+%% Tips:
+%% - Use 'after X' for dependencies
+%% - Use 'crit' tag for critical path: :crit, a1, 2026-02-01, 3d
+%% - Use 'active' for current tasks: :active, b1, ...
+%% - Use 'done' for completed: :done, a1, ...
+%% - Use 'milestone' for gates: :milestone, m1, after a4, 0d
+%% - Keep sections organized by phase, team, or workstream
+%% - Date format must match dateFormat setting

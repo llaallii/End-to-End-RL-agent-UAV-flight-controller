@@ -1,0 +1,166 @@
+%% D1.3 - SITL System Architecture
+%% UAV Flight Controller with On-Board Reinforcement Learning
+%% Priority 2 - Technical Architecture
+%% Placement: 02_WBS_Phase2_SITL_Baseline.md (Top of document)
+
+graph TB
+    %% External Layer
+    subgraph External["External Environment"]
+        Operator[👤 Operator]
+        Cloud[☁️ Cloud Storage<br/>Logs, Videos]
+    end
+    
+    %% ROS Layer
+    subgraph ROS["ROS/ROS2 Middleware Layer"]
+        ROSMaster[ROS Master<br/>roscore]
+        Topics[ROS Topics<br/>/cmd_vel, /imu/data, /odom]
+        Services[ROS Services<br/>/reset, /spawn]
+        Params[ROS Parameters<br/>Vehicle config]
+    end
+    
+    %% Simulation Layer
+    subgraph Gazebo["Gazebo Simulation Environment"]
+        PhysicsEngine[Physics Engine<br/>ODE/Bullet<br/>dt=0.001-0.004s]
+        WorldModel[World Model<br/>Ground plane, obstacles]
+        Rendering[3D Rendering<br/>Camera views]
+        
+        subgraph UAVPlugin["UAV Gazebo Plugin"]
+            PluginInterface[Plugin Interface<br/>ROS communication]
+        end
+    end
+    
+    %% UAV Dynamics Subsystem
+    subgraph Dynamics["UAV Dynamics Model"]
+        direction TB
+        EOM[Equations of Motion<br/>6-DOF<br/>ẍ = F/m + g<br/>ω̇ = I⁻¹(τ - ω×Iω)]
+        
+        MotorModel[Motor & Propeller<br/>τ = 50-100ms<br/>T = k_T·ω²<br/>Q = k_Q·ω²]
+        
+        Aerodynamics[Aerodynamic Model<br/>F_drag = -½ρ·v²·C_d·A<br/>Body-frame]
+        
+        Inertia[Mass & Inertia<br/>m ≈ 1kg<br/>I = diag[Ixx,Iyy,Izz]]
+    end
+    
+    %% Sensor Subsystem
+    subgraph Sensors["Sensor Simulation"]
+        direction TB
+        IMUSensor["IMU Sensor<br/>Accel + Gyro<br/>100+ Hz"]
+        
+        IMUModel["IMU Model:<br/>a_meas = R·(a + g) + noise<br/>ω_meas = ω + bias + noise"]
+        
+        OptionalSensors["Optional Sensors<br/>GPS (5-10Hz)<br/>Barometer (20-50Hz)<br/>Magnetometer (50-100Hz)"]
+        
+        SensorPlugin[Gazebo Sensor Plugin<br/>Publishes to ROS]
+    end
+    
+    %% Controller Subsystem
+    subgraph Controller["Baseline PID Controller"]
+        direction TB
+        
+        subgraph StateEstimation["State Estimation"]
+            Fusion[Sensor Fusion<br/>EKF or Complementary<br/>Filter]
+            StateVector[State Estimate<br/>x̂, v̂, q̂, ω̂]
+        end
+        
+        subgraph ControlCascade["Cascaded PID Control"]
+            OuterLoop[Position Controller<br/>Kp_pos, Ki_pos<br/>~10 Hz]
+            MiddleLoop[Velocity/Altitude<br/>Kp_vel, Ki_vel<br/>~50 Hz]
+            InnerLoop[Attitude Controller<br/>Kp_att, Ki_att, Kd_att<br/>~100 Hz]
+        end
+        
+        Mixer[Control Mixer<br/>6-DOF → 4 motors<br/>Thrust allocation]
+        
+        ControlNode[ROS Control Node<br/>C++ or Python]
+    end
+    
+    %% Verification Subsystem
+    subgraph Verification["Verification & Testing"]
+        TestScenarios[Test Scenarios<br/>Hover, waypoints<br/>Step responses]
+        
+        DataLogger[Data Logger<br/>rosbag recording<br/>CSV export]
+        
+        Metrics[Performance Metrics<br/>Tracking error<br/>Settling time]
+        
+        Visualization[Visualization<br/>RViz, Plotjuggler<br/>Real-time plots]
+    end
+    
+    %% Data Flow - External
+    Operator -->|Launch files<br/>Parameters| ROS
+    
+    %% Data Flow - ROS to Gazebo
+    ROSMaster <--> Services
+    ROSMaster <--> Topics
+    ROSMaster <--> Params
+    
+    Services <--> PluginInterface
+    Topics <--> PluginInterface
+    
+    %% Data Flow - Within Gazebo
+    PluginInterface --> PhysicsEngine
+    PhysicsEngine --> WorldModel
+    WorldModel --> Rendering
+    Rendering -.->|Visual feedback| Operator
+    
+    %% Data Flow - Dynamics
+    PluginInterface <-->|Motor commands<br/>State updates| EOM
+    EOM --> MotorModel
+    MotorModel --> EOM
+    Aerodynamics --> EOM
+    Inertia --> EOM
+    
+    %% Data Flow - Sensors
+    EOM -->|True state| IMUSensor
+    IMUSensor --> IMUModel
+    EOM -->|True state| OptionalSensors
+    IMUModel --> SensorPlugin
+    OptionalSensors --> SensorPlugin
+    SensorPlugin -->|/imu/data<br/>/gps/fix| Topics
+    
+    %% Data Flow - Controller
+    Topics -->|Sensor data| Fusion
+    Fusion --> StateVector
+    
+    Operator -->|Setpoint| ControlNode
+    StateVector --> OuterLoop
+    OuterLoop --> MiddleLoop
+    MiddleLoop --> InnerLoop
+    InnerLoop --> Mixer
+    Mixer --> ControlNode
+    ControlNode -->|/cmd_vel| Topics
+    
+    Topics -->|Commands| PluginInterface
+    
+    %% Data Flow - Verification
+    Topics --> DataLogger
+    DataLogger --> Metrics
+    Topics --> Visualization
+    Visualization -.->|Monitoring| Operator
+    TestScenarios -.->|Commands| ControlNode
+    Metrics -.->|Reports| Operator
+    DataLogger -.->|Logs| Cloud
+    
+    %% Styling
+    classDef external fill:#9B9B9B,stroke:#333,stroke-width:2px,color:#fff
+    classDef ros fill:#F5A623,stroke:#333,stroke-width:2px,color:#000
+    classDef simulation fill:#4A90E2,stroke:#333,stroke-width:2px,color:#fff
+    classDef dynamics fill:#1E88E5,stroke:#333,stroke-width:2px,color:#fff
+    classDef sensors fill:#43A047,stroke:#333,stroke-width:2px,color:#fff
+    classDef controller fill:#9013FE,stroke:#333,stroke-width:2px,color:#fff
+    classDef verification fill:#7ED321,stroke:#333,stroke-width:2px,color:#000
+    
+    class Operator,Cloud external
+    class ROSMaster,Topics,Services,Params ros
+    class PhysicsEngine,WorldModel,Rendering,PluginInterface simulation
+    class EOM,MotorModel,Aerodynamics,Inertia dynamics
+    class IMUSensor,IMUModel,OptionalSensors,SensorPlugin sensors
+    class Fusion,StateVector,OuterLoop,MiddleLoop,InnerLoop,Mixer,ControlNode controller
+    class TestScenarios,DataLogger,Metrics,Visualization verification
+
+%% Architecture Notes:
+%% - Complete SITL system showing all major subsystems
+%% - ROS middleware connects all components
+%% - Gazebo provides physics simulation
+%% - UAV dynamics: 6-DOF with motor and aerodynamic models
+%% - Sensors: IMU primary, GPS/Baro/Mag optional
+%% - Controller: Cascaded PID (position → velocity → attitude)
+%% - Verification: Testing, logging, visualization

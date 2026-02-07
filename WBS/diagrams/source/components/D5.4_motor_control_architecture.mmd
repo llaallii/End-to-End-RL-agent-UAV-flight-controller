@@ -1,0 +1,214 @@
+%% D5.4 - Motor Control Architecture
+%% UAV Flight Controller with On-Board Reinforcement Learning
+%% Priority 3 - Motor Interface Detail
+%% Placement: 05_WBS_Phase5_Custom_Hardware.md (Section 5.6)
+
+graph TB
+    %% Control Input
+    subgraph ControlInput["Control Input Source"]
+        RLPolicy["RL Policy Neural Net<br/>Output: [m1, m2, m3, m4]<br/>Range: [-1, 1]"]
+        PIDFallback["PID Controller<br/>(Fallback mode)<br/>Output: [m1, m2, m3, m4]"]
+        ModeSwitch["Mode Selector<br/>RL / PID / Manual<br/>Safety arbitration"]
+    end
+    
+    %% Mixer & Allocation
+    subgraph Mixer["Control Allocation & Mixing"]
+        Denorm["Denormalization<br/>[-1,1] → [0,1]<br/>or [1000, 2000] μs"]
+        
+        MixerMatrix["Mixer Matrix<br/>(Quad-X config):<br/>FL = T + R + P - Y<br/>FR = T - R + P + Y<br/>RL = T + R - P + Y<br/>RR = T - R - P - Y"]
+        
+        Saturate["Saturation Limiter<br/>Min: 0.0 (or 1000 μs)<br/>Max: 1.0 (or 2000 μs)<br/>Anti-windup"]
+        
+        Note_Mix[/"T = Thrust<br/>R = Roll<br/>P = Pitch<br/>Y = Yaw"/]
+    end
+    
+    %% PWM Generation
+    subgraph PWMGen["PWM Signal Generation"]
+        TimerConfig["Hardware Timer Config<br/>TIM1 (Advanced Timer)<br/>4 channels (CH1-CH4)<br/>Auto-reload register"]
+        
+        PWMFreq["PWM Frequency:<br/>Standard PWM: 50-400 Hz<br/>Oneshot125: 1-2 kHz<br/>DShot: 150-1200 kHz"]
+        
+        DutyCalc["Duty Cycle Calculation:<br/>PWM: pulse width (μs)<br/>DShot: digital bitstream<br/>ARR = timer period"]
+        
+        CCR["Capture/Compare Registers:<br/>CCR1, CCR2, CCR3, CCR4<br/>Set pulse width per channel"]
+    end
+    
+    %% Protocol Encoders
+    subgraph Protocol["Protocol Encoding"]
+        PWM_Enc["PWM Encoder<br/>1000-2000 μs<br/>50 Hz typical<br/>Analog signal"]
+        
+        Oneshot_Enc["Oneshot125 Encoder<br/>125-250 μs<br/>1-2 kHz<br/>Fast response"]
+        
+        DShot_Enc["DShot Encoder<br/>Digital protocol<br/>16-bit frames<br/>CRC validation<br/>Telemetry feedback"]
+        
+        ProtoSelect["Protocol Selector<br/>Configure at startup<br/>Based on ESC type"]
+    end
+    
+    %% Hardware Output
+    subgraph HardwareOut["Hardware Output Drivers"]
+        GPIO_TIM1["GPIO Configuration:<br/>PA8 (TIM1_CH1) - Motor 1<br/>PA9 (TIM1_CH2) - Motor 2<br/>PA10 (TIM1_CH3) - Motor 3<br/>PA11 (TIM1_CH4) - Motor 4"]
+        
+        OutputDriver["Output Drivers<br/>Push-pull mode<br/>3.3V logic level<br/>Fast slew rate"]
+        
+        SignalLevel["Signal Level:<br/>HIGH = 3.3V<br/>LOW = 0V<br/>Compatible with 5V ESCs<br/>(level shifter if needed)"]
+    end
+    
+    %% ESC & Motors
+    subgraph ESC["Electronic Speed Controllers (ESC)"]
+        ESC1["ESC 1 (Front Left)<br/>20-30A continuous<br/>BLHeli_32 or KISS<br/>3S-4S LiPo"]
+        ESC2["ESC 2 (Front Right)<br/>20-30A continuous"]
+        ESC3["ESC 3 (Rear Left)<br/>20-30A continuous"]
+        ESC4["ESC 4 (Rear Right)<br/>20-30A continuous"]
+        
+        ESC_Config["ESC Configuration:<br/>• Motor direction<br/>• Timing advance<br/>• Startup power<br/>• Brake strength"]
+        
+        Telemetry["DShot Telemetry (opt):<br/>• RPM feedback<br/>• Current draw<br/>• Temperature<br/>• Voltage"]
+    end
+    
+    subgraph Motors["Brushless Motors"]
+        Motor1["Motor 1<br/>2205-2306<br/>2300-2600 KV<br/>BLDC outrunner"]
+        Motor2["Motor 2<br/>Front Right"]
+        Motor3["Motor 3<br/>Rear Left"]
+        Motor4["Motor 4<br/>Rear Right"]
+        
+        MotorParams["Motor Parameters:<br/>• Max current: 25A<br/>• Max RPM: 30,000<br/>• Thrust: ~800g @ 100%<br/>• Response: <10ms"]
+    end
+    
+    %% Safety Monitoring
+    subgraph Safety["Safety & Monitoring"]
+        ThrottleLock["Throttle Lock<br/>Prevent startup unless<br/>armed + zero throttle"]
+        
+        MotorTest["Motor Test Mode<br/>Individual motor<br/>verification<br/>Low speed only"]
+        
+        FailsafeMotor["Motor Failsafe:<br/>• Comm timeout → idle<br/>• Attitude error → cut<br/>• Battery low → land<br/>• Manual kill → immediate stop"]
+        
+        RPMMonitor["RPM Monitoring<br/>Detect motor stall<br/>or desync<br/>Log anomalies"]
+    end
+    
+    %% Data Flow - Control Path
+    RLPolicy --> ModeSwitch
+    PIDFallback --> ModeSwitch
+    ModeSwitch --> Denorm
+    
+    Denorm --> MixerMatrix
+    MixerMatrix --> Saturate
+    Note_Mix -.-> MixerMatrix
+    
+    %% Data Flow - PWM Generation
+    Saturate --> DutyCalc
+    TimerConfig --> DutyCalc
+    PWMFreq -.-> TimerConfig
+    
+    DutyCalc --> CCR
+    CCR --> ProtoSelect
+    
+    %% Data Flow - Protocol Encoding
+    ProtoSelect --> PWM_Enc
+    ProtoSelect --> Oneshot_Enc
+    ProtoSelect --> DShot_Enc
+    
+    PWM_Enc --> GPIO_TIM1
+    Oneshot_Enc --> GPIO_TIM1
+    DShot_Enc --> GPIO_TIM1
+    
+    %% Data Flow - Hardware
+    GPIO_TIM1 --> OutputDriver
+    SignalLevel -.-> OutputDriver
+    
+    OutputDriver -->|"Signal 1"| ESC1
+    OutputDriver -->|"Signal 2"| ESC2
+    OutputDriver -->|"Signal 3"| ESC3
+    OutputDriver -->|"Signal 4"| ESC4
+    
+    %% Data Flow - ESC to Motors
+    ESC_Config -.-> ESC1
+    ESC_Config -.-> ESC2
+    ESC_Config -.-> ESC3
+    ESC_Config -.-> ESC4
+    
+    ESC1 --> Motor1
+    ESC2 --> Motor2
+    ESC3 --> Motor3
+    ESC4 --> Motor4
+    
+    MotorParams -.-> Motor1
+    
+    %% Data Flow - Telemetry (feedback)
+    ESC1 -.->|"DShot telem"| Telemetry
+    Telemetry -.->|"RPM data"| RPMMonitor
+    
+    %% Data Flow - Safety
+    ThrottleLock -.->|"Gate"| ModeSwitch
+    MotorTest -.->|"Override"| ModeSwitch
+    FailsafeMotor -.->|"Emergency"| Saturate
+    RPMMonitor -.->|"Health"| Safety
+    
+    %% Timing Annotations
+    TimingNote[/"Control Loop Timing:<br/>• RL/PID update: 100 Hz (10 ms)<br/>• PWM update: 400 Hz (2.5 ms)<br/>• DShot update: 1-2 kHz (0.5-1 ms)<br/>• Motor response: <10 ms"/]
+    
+    PWMGen -.-> TimingNote
+    
+    %% Styling
+    classDef control fill:#9013FE,stroke:#333,stroke-width:2px,color:#fff
+    classDef mixing fill:#4A90E2,stroke:#333,stroke-width:2px,color:#fff
+    classDef pwm fill:#50E3C2,stroke:#333,stroke-width:2px,color:#000
+    classDef protocol fill:#7ED321,stroke:#333,stroke-width:2px,color:#000
+    classDef hardware fill:#F5A623,stroke:#333,stroke-width:2px,color:#000
+    classDef esc fill:#BD10E0,stroke:#333,stroke-width:2px,color:#fff
+    classDef motor fill:#D0021B,stroke:#333,stroke-width:2px,color:#fff
+    classDef safety fill:#B8E986,stroke:#333,stroke-width:2px,color:#000
+    classDef annotation fill:#E0E0E0,stroke:#333,stroke-width:1px,color:#000
+    
+    class RLPolicy,PIDFallback,ModeSwitch control
+    class Denorm,MixerMatrix,Saturate,Note_Mix mixing
+    class TimerConfig,PWMFreq,DutyCalc,CCR pwm
+    class PWM_Enc,Oneshot_Enc,DShot_Enc,ProtoSelect protocol
+    class GPIO_TIM1,OutputDriver,SignalLevel hardware
+    class ESC1,ESC2,ESC3,ESC4,ESC_Config,Telemetry esc
+    class Motor1,Motor2,Motor3,Motor4,MotorParams motor
+    class ThrottleLock,MotorTest,FailsafeMotor,RPMMonitor safety
+    class TimingNote annotation
+
+%% Motor Control Architecture Summary:
+%% 
+%% Control Flow:
+%%   1. RL policy or PID outputs motor commands [-1, 1]
+%%   2. Mode selector chooses active controller (safety arbitration)
+%%   3. Denormalization converts to [0, 1] or [1000, 2000] μs
+%%   4. Mixer matrix allocates thrust/roll/pitch/yaw to 4 motors
+%%   5. Saturation limiter prevents overrun
+%%   6. PWM/DShot encoder generates signal
+%%   7. Hardware timer outputs to GPIO pins
+%%   8. ESCs convert signal to motor drive
+%%   9. Brushless motors generate thrust
+%% 
+%% Mixer Matrix (Quad-X):
+%%   FL (Motor 1) = Thrust + Roll + Pitch - Yaw
+%%   FR (Motor 2) = Thrust - Roll + Pitch + Yaw
+%%   RL (Motor 3) = Thrust + Roll - Pitch + Yaw
+%%   RR (Motor 4) = Thrust - Roll - Pitch - Yaw
+%% 
+%% Protocols:
+%%   - PWM: 1000-2000 μs, 50-400 Hz (standard, slow)
+%%   - Oneshot125: 125-250 μs, 1-2 kHz (faster response)
+%%   - DShot: Digital bitstream, 150-1200 kHz (best, with telemetry)
+%% 
+%% Hardware:
+%%   - Timer: TIM1 (advanced timer, 4 channels)
+%%   - GPIO: PA8-PA11 (TIM1_CH1-4)
+%%   - Output: 3.3V logic (push-pull, fast slew)
+%%   - ESCs: 20-30A, BLHeli_32 or KISS firmware
+%%   - Motors: 2205-2306, 2300-2600 KV, BLDC outrunner
+%% 
+%% Safety Features:
+%%   - Throttle lock (prevent hot start)
+%%   - Motor test mode (individual verification)
+%%   - Failsafe (timeout → idle, error → cut)
+%%   - RPM monitoring (detect stall/desync)
+%%   - Saturation limiting (prevent overrun)
+%% 
+%% Performance:
+%%   - Control loop: 100 Hz (RL policy update)
+%%   - PWM update: 400 Hz - 2 kHz (depends on protocol)
+%%   - Motor response time: <10 ms (throttle to thrust)
+%%   - Thrust range: 0-800g per motor (~3.2 kg total @ 100%)

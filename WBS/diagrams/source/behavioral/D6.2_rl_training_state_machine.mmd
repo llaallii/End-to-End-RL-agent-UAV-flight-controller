@@ -1,0 +1,249 @@
+%% D6.2 - RL Training State Machine
+%% UAV Flight Controller with On-Board Reinforcement Learning
+%% Priority 3 - Training Process States
+%% Placement: 03_WBS_Phase3_RL_Control.md (Section 3.4)
+
+stateDiagram-v2
+    [*] --> Setup : Start training
+    
+    Setup --> EnvironmentInit : Config loaded
+    
+    state Setup {
+        [*] --> LoadConfig
+        LoadConfig --> CreateDirs : Parse YAML
+        CreateDirs --> InitLogging : Create output folders
+        InitLogging --> SetSeed : TensorBoard ready
+        SetSeed --> [*] : Random seed set
+        
+        note right of LoadConfig
+            Load hyperparameters:
+            • Learning rate
+            • Batch size
+            • Episode length
+            • Network architecture
+        end note
+    }
+    
+    EnvironmentInit --> PolicyInit : Env ready
+    
+    state EnvironmentInit {
+        [*] --> ConnectGazebo
+        ConnectGazebo --> ResetSim : ROS connected
+        ResetSim --> CheckSensors : UAV spawned
+        CheckSensors --> [*] : Sensors validated
+        
+        note right of ConnectGazebo
+            Connect to SITL:
+            • Launch Gazebo
+            • Spawn UAV model
+            • Initialize ROS topics
+        end note
+    }
+    
+    PolicyInit --> Training : Model ready
+    
+    state PolicyInit {
+        [*] --> BuildNetwork
+        BuildNetwork --> InitWeights : Create layers
+        InitWeights --> LoadCheckpoint : Xavier/He init
+        LoadCheckpoint --> [*] : Weights loaded
+        
+        note right of BuildNetwork
+            Neural Network:
+            • Input: 15 dimensions
+            • Hidden: 128-128
+            • Output: 4 motors (actor)
+            • Value: 1 (critic)
+        end note
+    }
+    
+    state Training {
+        [*] --> RolloutPhase
+        
+        state RolloutPhase {
+            [*] --> ResetEpisode
+            ResetEpisode --> CollectExperience : Random spawn
+            
+            state CollectExperience {
+                [*] --> ObserveState
+                ObserveState --> PolicyInference : Read sensors
+                PolicyInference --> ExecuteAction : Compute action
+                ExecuteAction --> ComputeReward : Apply to simulation
+                ComputeReward --> StoreTransition : Evaluate episode
+                StoreTransition --> CheckDone : Buffer.add()
+                
+                CheckDone --> ObserveState : Not done
+                CheckDone --> [*] : Episode complete
+            }
+            
+            CollectExperience --> CheckBufferFull : Episode done
+            CheckBufferFull --> RolloutPhase : Need more data
+            CheckBufferFull --> [*] : Buffer full (2048 steps)
+        }
+        
+        RolloutPhase --> UpdatePhase : Sufficient data
+        
+        state UpdatePhase {
+            [*] --> ComputeAdvantages
+            ComputeAdvantages --> CreateMiniBatches : GAE calculation
+            CreateMiniBatches --> OptimizationLoop : Shuffle data
+            
+            state OptimizationLoop {
+                [*] --> ForwardPass
+                ForwardPass --> ComputeLoss : Batch inference
+                
+                state ComputeLoss {
+                    [*] --> ActorLoss
+                    [*] --> CriticLoss
+                    [*] --> EntropyBonus
+                    ActorLoss --> TotalLoss
+                    CriticLoss --> TotalLoss
+                    EntropyBonus --> TotalLoss
+                    TotalLoss --> [*]
+                }
+                
+                ComputeLoss --> BackwardPass : Gradient computation
+                BackwardPass --> ClipGradients : Backprop
+                ClipGradients --> UpdateWeights : Norm clipping
+                UpdateWeights --> [*] : Adam optimizer
+            }
+            
+            OptimizationLoop --> CheckEpochs : Mini-batch done
+            CheckEpochs --> OptimizationLoop : More epochs (10 total)
+            CheckEpochs --> [*] : Optimization complete
+        }
+        
+        UpdatePhase --> EvaluationPhase : Weights updated
+        
+        state EvaluationPhase {
+            [*] --> RunEvalEpisodes
+            RunEvalEpisodes --> ComputeMetrics : 10 episodes, no exploration
+            ComputeMetrics --> LogResults : Mean reward, success rate
+            LogResults --> [*] : TensorBoard updated
+            
+            note right of ComputeMetrics
+                Metrics:
+                • Mean episode reward
+                • Success rate (reached goal)
+                • Average episode length
+                • Crash rate
+            end note
+        }
+        
+        EvaluationPhase --> CheckpointPhase : Eval complete
+        
+        state CheckpointPhase {
+            [*] --> CheckImprovement
+            CheckImprovement --> SaveBestModel : New best reward
+            CheckImprovement --> SavePeriodicCheckpoint : Not best
+            SaveBestModel --> [*]
+            SavePeriodicCheckpoint --> [*]
+        }
+        
+        CheckpointPhase --> CheckConvergence : Checkpoint saved
+        
+        CheckConvergence --> RolloutPhase : Continue training
+        CheckConvergence --> [*] : Convergence achieved
+    }
+    
+    Training --> Compression : Training complete
+    
+    state Compression {
+        [*] --> ExtractActor
+        ExtractActor --> Quantization : Discard critic
+        Quantization --> Pruning : FP32 → INT8
+        Pruning --> ValidateCompressed : Remove low-weight connections
+        ValidateCompressed --> [*] : Performance check
+        
+        note right of Quantization
+            Model Compression:
+            • Post-training quantization
+            • INT8 weights & activations
+            • 4x size reduction
+            • <5% accuracy loss
+        end note
+    }
+    
+    Compression --> Export : Compressed model ready
+    
+    state Export {
+        [*] --> ConvertFormat
+        ConvertFormat --> SaveWeights : TensorFlow Lite or ONNX
+        SaveWeights --> GenerateHeader : Binary format
+        GenerateHeader --> [*] : C array for MCU
+        
+        note right of GenerateHeader
+            Export formats:
+            • .tflite (TensorFlow Lite)
+            • .onnx (ONNX)
+            • weights.h (C header)
+            • config.yaml (metadata)
+        end note
+    }
+    
+    Export --> [*] : Model deployed
+    
+    %% Error transitions
+    EnvironmentInit --> ErrorHandler : Connection failed
+    PolicyInit --> ErrorHandler : Model error
+    Training --> ErrorHandler : Critical failure
+    
+    state ErrorHandler {
+        [*] --> LogError
+        LogError --> Cleanup : Save traceback
+        Cleanup --> [*] : Release resources
+    }
+    
+    ErrorHandler --> [*] : Exit with error
+    
+    %% Notes
+    note right of Training
+        Training Loop (PPO):
+        1. Collect 2048 steps of experience
+        2. Compute advantages (GAE λ=0.95)
+        3. Optimize policy for 10 epochs
+        4. Evaluate performance
+        5. Save checkpoints
+        6. Repeat until convergence
+    end note
+
+%% RL Training State Machine Summary:
+%% 
+%% Main Phases:
+%%   1. Setup: Load config, create directories, init logging
+%%   2. Environment Init: Connect to Gazebo, reset simulation
+%%   3. Policy Init: Build network, initialize weights
+%%   4. Training: Rollout → Update → Evaluate → Checkpoint (loop)
+%%   5. Compression: Quantize and prune model for deployment
+%%   6. Export: Convert to TensorFlow Lite / ONNX / C header
+%% 
+%% Training Loop (PPO):
+%%   - Rollout Phase: Collect 2048 steps of experience
+%%   - Update Phase: Optimize for 10 epochs with mini-batches
+%%   - Evaluation Phase: Test on 10 episodes without exploration
+%%   - Checkpoint Phase: Save best model and periodic checkpoints
+%%   - Convergence Check: Stop if reward plateaus for 50 iterations
+%% 
+%% Hyperparameters (typical):
+%%   - Learning rate: 3e-4
+%%   - Batch size: 64
+%%   - Clip range: 0.2
+%%   - GAE λ: 0.95
+%%   - Discount γ: 0.99
+%%   - Entropy coefficient: 0.01
+%%   - Value loss coefficient: 0.5
+%%   - Max gradient norm: 0.5
+%% 
+%% Convergence Criteria:
+%%   - Mean reward > threshold (e.g., -10) for 10 evaluations
+%%   - Success rate > 90% for goal-reaching tasks
+%%   - No improvement for 50 training iterations (early stop)
+%%   - Maximum 1M - 5M timesteps
+%% 
+%% Output Artifacts:
+%%   - best_model.zip (full policy + critic)
+%%   - actor_only.pth (deployment model)
+%%   - actor_quantized.tflite (compressed for MCU)
+%%   - weights.h (C array for firmware)
+%%   - training_logs/ (TensorBoard logs)
+%%   - checkpoints/ (periodic saves)

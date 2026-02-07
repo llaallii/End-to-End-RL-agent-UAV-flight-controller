@@ -1,0 +1,100 @@
+%% D3.2 - HIL Communication Flow (Sequence Diagram)
+%% UAV Flight Controller with On-Board Reinforcement Learning
+%% Priority 2 - Critical Communication
+%% Placement: 04_WBS_Phase4_HIL_Flight_Control.md (Section 4.4)
+
+sequenceDiagram
+    participant Gazebo as Gazebo Simulation
+    participant HIL as HIL Bridge Plugin
+    participant Serial as UART/USB Interface
+    participant MCU as MCU Firmware
+    participant RL as RL Inference Engine
+    
+    Note over Gazebo,MCU: Initialization Phase
+    MCU->>Serial: Handshake Request (0xAA55)
+    Serial->>HIL: Forward Handshake
+    HIL->>Gazebo: Initialize Simulation
+    Gazebo-->>HIL: Sim Ready
+    HIL-->>Serial: Handshake ACK + Config
+    Serial-->>MCU: Configuration Data
+    MCU-->>Serial: Ready (0xACK)
+    
+    Note over Gazebo,MCU: Normal Operation Loop (100 Hz = 10ms period)
+    
+    loop Every 10ms Control Cycle
+        Note over Gazebo,HIL: Physics Step (Gazebo)
+        Gazebo->>Gazebo: Physics Integration (dt=0.001s)
+        Gazebo->>Gazebo: Update UAV State
+        
+        Note over Gazebo,MCU: Sensor Data Transmission (Gazebo → MCU)
+        Gazebo->>HIL: True State (x, v, q, ω)
+        HIL->>HIL: Add Sensor Noise
+        HIL->>HIL: Serialize IMU Data
+        HIL->>Serial: Binary Packet:<br/>[Header|IMU|CRC]<br/>~64 bytes
+        Note right of Serial: Transmission delay<br/>~0.5ms @ 115200 baud
+        Serial->>MCU: Sensor Packet
+        
+        Note over MCU,RL: Firmware Processing
+        MCU->>MCU: Parse & Validate (CRC check)
+        MCU->>MCU: State Estimation (EKF)
+        MCU->>RL: Estimated State
+        RL->>RL: Neural Network Inference<br/>(Forward pass <10ms)
+        RL-->>MCU: Motor Commands [4 x PWM]
+        MCU->>MCU: Safety Checks
+        
+        Note over MCU,Gazebo: Control Command Transmission (MCU → Gazebo)
+        MCU->>Serial: Binary Packet:<br/>[Header|Commands|CRC]<br/>~32 bytes
+        Note right of Serial: Transmission delay<br/>~0.3ms @ 115200 baud
+        Serial->>HIL: Control Packet
+        HIL->>HIL: Parse & Validate
+        HIL->>Gazebo: Apply Motor Forces
+    end
+    
+    Note over Gazebo,MCU: Error Handling Scenario
+    
+    alt Communication Timeout
+        MCU->>Serial: Expecting sensor data...
+        Note over MCU: Timeout after 15ms
+        MCU->>MCU: Trigger Failsafe
+        MCU->>Serial: Error Status (0xERR)
+        MCU->>MCU: Enter Safe Mode
+        
+    else CRC Error Detected
+        Serial->>MCU: Corrupted Packet
+        MCU->>MCU: CRC Validation Failed
+        MCU->>MCU: Discard Packet
+        MCU->>Serial: Request Retransmit (0xNAK)
+        HIL->>Serial: Resend Last Packet
+        
+    else Sensor Data Anomaly
+        MCU->>MCU: Detect Invalid Reading
+        MCU->>MCU: Use Previous Estimate
+        MCU->>Serial: Warning Status
+    end
+    
+    Note over Gazebo,MCU: Shutdown Sequence
+    MCU->>Serial: Shutdown Request
+    Serial->>HIL: Terminate Connection
+    HIL->>Gazebo: Stop Simulation
+    Gazebo-->>HIL: Confirm Stop
+    HIL-->>Serial: Shutdown ACK
+    Serial-->>MCU: Connection Closed
+
+%% Communication Protocol Details:
+%% 
+%% Packet Structure:
+%% - Sensor Data (Gazebo → MCU): [0xAA|IMU(48B)|GPS(opt)|CRC16]
+%% - Control Data (MCU → Gazebo): [0x55|Motors(16B)|Status|CRC16]
+%% 
+%% Timing Constraints:
+%% - Control loop: 100 Hz (10ms period)
+%% - Serial transmission: <1ms total
+%% - Firmware processing: <5ms
+%% - RL inference: <8ms (target <5ms)
+%% - Total latency budget: <15ms
+%% 
+%% Error Handling:
+%% - CRC16 for data integrity
+%% - Timeout detection (15ms)
+%% - Retry mechanism (max 3 attempts)
+%% - Failsafe on persistent errors

@@ -1,0 +1,227 @@
+%% D8.2 - HIL Physical Setup Diagram
+%% UAV Flight Controller with On-Board Reinforcement Learning
+%% Priority 3 - Hardware-in-the-Loop Configuration
+%% Placement: 04_WBS_Phase4_HIL_Flight_Control.md (Appendix A)
+
+graph TB
+    %% Development PC
+    subgraph DevPC["Development PC (Linux/Windows)"]
+        Gazebo["Gazebo Simulator<br/>Physics engine<br/>UAV model<br/>Sensor simulation"]
+        
+        ROSCore["ROS 2 Core<br/>roscore daemon<br/>Topic routing"]
+        
+        HILPlugin["HIL Bridge Plugin<br/>Custom Gazebo plugin<br/>Serial communication"]
+        
+        GCS["QGroundControl<br/>(Optional)<br/>Monitoring & config"]
+        
+        Monitor["System Monitor<br/>htop, iotop<br/>Performance tracking"]
+        
+        DevTools["Development Tools:<br/>• VS Code / CLion<br/>• GDB debugger<br/>• Serial terminal<br/>• Wireshark (packet capture)"]
+    end
+    
+    %% Communication Interface
+    subgraph CommInterface["Communication Interface"]
+        USBCable["USB Cable<br/>Type-A to Micro-B<br/>or USB-C<br/>1-2 meters"]
+        
+        USBHub["USB Hub (Optional)<br/>Powered 4-port hub<br/>For multiple devices"]
+        
+        SerialConverter["Serial Converter<br/>(if needed)<br/>FTDI FT232 or CP2102<br/>3.3V TTL logic"]
+    end
+    
+    %% MCU Development Board
+    subgraph MCUBoard["MCU Development Board"]
+        MCU["STM32F4/F7 MCU<br/>Nucleo or Discovery<br/>Flash firmware"]
+        
+        UARTPins["UART Pins:<br/>TX (PA9)<br/>RX (PA10)<br/>GND"]
+        
+        PowerUSB["USB Power<br/>5V input<br/>Regulated to 3.3V"]
+        
+        DebugPort["Debug Port<br/>ST-Link V2/V3<br/>JTAG/SWD<br/>10-pin connector"]
+        
+        StatusLED["Status LEDs<br/>Built-in or external<br/>Visual feedback"]
+        
+        ExpBoard["Expansion Board (Opt)<br/>Sensor breakouts<br/>IMU, Baro, GPS"]
+    end
+    
+    %% Power Supply
+    subgraph PowerSystem["Power Supply"]
+        USBPower["USB Power from PC<br/>5V @ 500mA-2A<br/>Sufficient for MCU only"]
+        
+        ExtPower["External PSU (Opt)<br/>Lab bench supply<br/>3.3V or 5V<br/>For sensors/peripherals"]
+        
+        BatteryPack["Battery Pack (Opt)<br/>LiPo 3S-4S<br/>For motor testing<br/>⚠️ Requires current limiting"]
+    end
+    
+    %% Physical Setup Layout
+    subgraph PhysicalLayout["Physical Setup Layout"]
+        Desk["Desktop / Workbench<br/>Adequate space<br/>Good ventilation"]
+        
+        PCMount["PC Monitor<br/>Gazebo visualization<br/>Terminal windows"]
+        
+        BoardMount["MCU Board Mount<br/>Anti-static mat<br/>Secure placement<br/>Vibration isolated"]
+        
+        CableManagement["Cable Management<br/>Organized routing<br/>Strain relief<br/>No tangled wires"]
+    end
+    
+    %% Safety Equipment
+    subgraph SafetyEquip["Safety Equipment"]
+        ESD["ESD Protection<br/>Anti-static wrist strap<br/>Grounded mat"]
+        
+        FireExt["Fire Extinguisher<br/>(Class C electrical)<br/>Nearby access"]
+        
+        SafetyGlasses["Safety Glasses<br/>For motor tests<br/>Eye protection"]
+        
+        CurrentLimit["Current Limiter<br/>Fuse or circuit breaker<br/>Prevent overcurrent"]
+    end
+    
+    %% Network Setup (Optional)
+    subgraph Network["Network Setup (Optional)"]
+        EthernetSwitch["Ethernet Switch<br/>For distributed HIL<br/>PC ↔ Real-time target"]
+        
+        WiFiAP["WiFi Access Point<br/>For wireless telemetry<br/>Optional GCS link"]
+    end
+    
+    %% Connections - PC to Communication
+    Gazebo <--> HILPlugin
+    HILPlugin <--> ROSCore
+    Gazebo --> Monitor
+    Monitor --> DevTools
+    ROSCore --> GCS
+    
+    %% Connections - Communication to MCU
+    HILPlugin -->|"Serial data"| USBCable
+    USBCable --> USBHub
+    USBHub --> SerialConverter
+    SerialConverter --> UARTPins
+    
+    %% Connections - MCU Internal
+    UARTPins <--> MCU
+    MCU --> StatusLED
+    MCU <--> ExpBoard
+    DebugPort --> MCU
+    DevTools -.->|"GDB"| DebugPort
+    
+    %% Connections - Power
+    USBPower --> PowerUSB
+    PowerUSB --> MCU
+    ExtPower -.->|"If sensors used"| ExpBoard
+    BatteryPack -.->|"⚠️ Motor test only"| ExpBoard
+    
+    %% Connections - Safety
+    CurrentLimit -.->|"Protect"| BatteryPack
+    ESD -.-> BoardMount
+    
+    %% Physical Layout
+    Desk --> PCMount
+    Desk --> BoardMount
+    Desk --> CableManagement
+    CableManagement --> USBCable
+    
+    %% Annotations
+    SetupNote[/"HIL Setup Checklist:<br/>1. Install Gazebo + ROS on PC<br/>2. Flash firmware to MCU<br/>3. Connect USB cable (PC ↔ MCU)<br/>4. Verify serial port (e.g., /dev/ttyUSB0)<br/>5. Launch Gazebo with HIL plugin<br/>6. Start firmware on MCU<br/>7. Verify handshake & data exchange"/]
+    
+    DevPC -.-> SetupNote
+    
+    TimingNote[/"Timing Considerations:<br/>• USB latency: ~1ms<br/>• Gazebo step: 1ms (1kHz physics)<br/>• Control loop: 10ms (100 Hz)<br/>• Total round-trip: <5ms"/]
+    
+    CommInterface -.-> TimingNote
+    
+    TroubleshootNote[/"Common Issues:<br/>• USB device not detected → Check cable, drivers<br/>• Serial timeout → Verify baud rate (115200)<br/>• Gazebo lag → Reduce physics step or use headless<br/>• MCU reset → Check power supply, add decoupling caps"/]
+    
+    MCUBoard -.-> TroubleshootNote
+    
+    %% Styling
+    classDef pc fill:#4A90E2,stroke:#333,stroke-width:2px,color:#fff
+    classDef comm fill:#50E3C2,stroke:#333,stroke-width:2px,color:#000
+    classDef mcu fill:#7ED321,stroke:#333,stroke-width:2px,color:#000
+    classDef power fill:#F5A623,stroke:#333,stroke-width:2px,color:#000
+    classDef physical fill:#B8E986,stroke:#333,stroke-width:2px,color:#000
+    classDef safety fill:#D0021B,stroke:#333,stroke-width:2px,color:#fff
+    classDef network fill:#9013FE,stroke:#333,stroke-width:2px,color:#fff
+    classDef annotation fill:#E0E0E0,stroke:#333,stroke-width:1px,color:#000
+    
+    class Gazebo,ROSCore,HILPlugin,GCS,Monitor,DevTools pc
+    class USBCable,USBHub,SerialConverter comm
+    class MCU,UARTPins,PowerUSB,DebugPort,StatusLED,ExpBoard mcu
+    class USBPower,ExtPower,BatteryPack power
+    class Desk,PCMount,BoardMount,CableManagement physical
+    class ESD,FireExt,SafetyGlasses,CurrentLimit safety
+    class EthernetSwitch,WiFiAP network
+    class SetupNote,TimingNote,TroubleshootNote annotation
+
+%% HIL Physical Setup Summary:
+%% 
+%% Required Components:
+%%   1. Development PC (Linux/Windows)
+%%      - CPU: Quad-core or better (for Gazebo)
+%%      - RAM: 8 GB minimum, 16 GB recommended
+%%      - GPU: Dedicated GPU for Gazebo 3D rendering
+%%      - OS: Ubuntu 20.04/22.04 or Windows 10/11
+%%   
+%%   2. MCU Development Board
+%%      - STM32F4 Discovery or Nucleo-F446RE
+%%      - STM32F7 Discovery (faster, more RAM)
+%%      - Built-in ST-Link debugger
+%%      - USB connectivity
+%%   
+%%   3. USB Cable
+%%      - Type-A (PC side) to Micro-B or USB-C (board side)
+%%      - 1-2 meters length (manageable cable routing)
+%%      - Data-capable (not power-only)
+%%   
+%%   4. Power Supply
+%%      - USB power (500 mA from PC) sufficient for MCU alone
+%%      - External 3.3V/5V PSU for sensors (if expansion board used)
+%%      - Battery pack only for motor testing (⚠️ safety!)
+%% 
+%% Optional Components:
+%%   - USB hub (4-port powered) for multiple devices
+%%   - Serial converter (FTDI FT232) if MCU lacks USB
+%%   - Expansion board with IMU/Baro/GPS for realistic sensor testing
+%%   - Second monitor for better workflow (Gazebo + terminals)
+%%   - Logic analyzer for debugging serial protocol
+%% 
+%% Physical Setup:
+%%   - Desktop or workbench with adequate space
+%%   - Anti-static mat for MCU board
+%%   - PC monitor for Gazebo visualization
+%%   - Organized cable routing (avoid tangles)
+%%   - Good ventilation (especially if motor testing)
+%% 
+%% Software Setup:
+%%   - PC: Gazebo 11, ROS 2 Foxy/Humble, custom HIL plugin
+%%   - MCU: Firmware with HIL mode enabled (UART bridge)
+%%   - GCS: QGroundControl for monitoring (optional)
+%%   - Dev tools: VS Code, GDB, serial terminal (minicom/PuTTY)
+%% 
+%% Communication:
+%%   - Protocol: Custom binary (sensor data ↓, motor commands ↑)
+%%   - Baud rate: 115200 (reliable, fast enough)
+%%   - Latency: <5ms round-trip (USB ~1ms, processing ~2ms)
+%%   - Packet format: [Header | Payload | CRC16]
+%% 
+%% Workflow:
+%%   1. Launch Gazebo with UAV model and HIL plugin
+%%   2. Flash firmware to MCU (via ST-Link)
+%%   3. Connect USB cable (PC ↔ MCU)
+%%   4. Open serial port (/dev/ttyUSB0 or COM3)
+%%   5. Start firmware on MCU (auto-start or reset button)
+%%   6. Verify handshake in Gazebo console
+%%   7. Observe sensor data flowing to MCU
+%%   8. Observe motor commands flowing from MCU to Gazebo
+%%   9. UAV flies in simulation controlled by real firmware
+%% 
+%% Safety Precautions:
+%%   - ESD protection (wrist strap, mat)
+%%   - Fire extinguisher nearby (for battery/motor tests)
+%%   - Current limiter on battery (prevent overcurrent)
+%%   - Safety glasses for motor tests
+%%   - Kill switch accessible (emergency stop)
+%%   - Never connect motors during HIL testing (use simulation only)
+%% 
+%% Troubleshooting:
+%%   - USB not detected → Check cable (data-capable), check drivers
+%%   - Serial timeout → Verify baud rate, check port permissions
+%%   - Gazebo lag → Reduce physics step rate or use headless mode
+%%   - MCU resets → Check power supply stability, add decoupling caps
+%%   - Data corruption → Verify CRC, check for electrical noise

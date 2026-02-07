@@ -1,0 +1,64 @@
+%% Process/Workflow Diagram Template
+%% Use this template for process flows, decision trees, and workflows
+
+flowchart TD
+    Start([Start Process])
+    
+    Step1[Step 1: Initial Action]
+    Decision1{Decision Point?}
+    
+    Step2A[Path A: Action]
+    Step2B[Path B: Alternative Action]
+    
+    Decision2{Another<br/>Decision?}
+    
+    Step3[Step 3: Processing]
+    Step4[Step 4: Validation]
+    
+    Success([Success End])
+    Failure([Failure End])
+    
+    %% Main flow
+    Start --> Step1
+    Step1 --> Decision1
+    
+    %% Decision branches
+    Decision1 -->|"Condition A"| Step2A
+    Decision1 -->|"Condition B"| Step2B
+    
+    Step2A --> Step3
+    Step2B --> Step3
+    
+    Step3 --> Step4
+    Step4 --> Decision2
+    
+    Decision2 -->|"Valid"| Success
+    Decision2 -->|"Invalid"| Failure
+    
+    %% Error/retry paths
+    Failure -.->|"Retry"| Step1
+    
+    %% Annotations
+    Note1[/"Important Note:<br/>Add context here"/]
+    Step3 -.-> Note1
+    
+    %% Styling
+    classDef processStep fill:#4A90E2,stroke:#333,stroke-width:2px,color:#fff
+    classDef decision fill:#F5A623,stroke:#333,stroke-width:2px,color:#fff
+    classDef terminal fill:#7ED321,stroke:#333,stroke-width:2px,color:#fff
+    classDef failure fill:#D0021B,stroke:#333,stroke-width:2px,color:#fff
+    
+    class Step1,Step2A,Step2B,Step3,Step4 processStep
+    class Decision1,Decision2 decision
+    class Success terminal
+    class Failure failure
+
+%% Tips:
+%% - Use rounded boxes ([]) for start/end
+%% - Use rectangles [] for process steps
+%% - Use diamonds {} for decisions
+%% - Label decision branches clearly
+%% - Use dashed lines for optional/error paths
+%% - Add notes for complex steps
+%% - Keep flow top-to-bottom or left-to-right
+%% - Group related steps logically

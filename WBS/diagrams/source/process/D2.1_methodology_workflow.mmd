@@ -1,0 +1,148 @@
+%% D2.1 - Project Methodology Workflow
+%% UAV Flight Controller with On-Board Reinforcement Learning
+%% Priority 1 - Foundation Diagram
+%% Placement: 00_WBS_Master_Overview.md (Section 1.2)
+
+flowchart TD
+    Start([Project Start])
+    
+    %% Phase 1: Infrastructure
+    subgraph Phase1["Phase 1: Infrastructure Setup (2 weeks)"]
+        Req[Requirements<br/>Management]
+        CICD[CI/CD Pipeline<br/>Setup]
+        Docs[Documentation<br/>Framework]
+    end
+    
+    %% Gate 1
+    Gate1{Stage Gate 1:<br/>Infrastructure<br/>Ready?}
+    
+    %% Phase 2: SITL
+    subgraph Phase2["Phase 2: SITL Baseline (8-10 weeks)"]
+        Gazebo[Gazebo Simulation<br/>Environment]
+        Dynamics[UAV Dynamics<br/>Model]
+        Sensors[Sensor Models<br/>IMU/GPS/Baro]
+        PID[Baseline PID<br/>Controller]
+        SITLTest[SITL Performance<br/>Verification]
+    end
+    
+    %% Gate 2
+    Gate2{Stage Gate 2:<br/>Simulation<br/>Validated?}
+    
+    %% Phase 3: RL
+    subgraph Phase3["Phase 3: RL Training (10-12 weeks)"]
+        RLFramework[RL Framework<br/>Integration]
+        TrainEnv[Training Environment<br/>Design]
+        PolicyArch[Neural Network<br/>Architecture]
+        Training[Iterative Training<br/>& Tuning]
+        RLEval[RL Performance<br/>Evaluation]
+        Compress[Policy<br/>Compression]
+    end
+    
+    %% Gate 3
+    Gate3{Stage Gate 3:<br/>RL Policy<br/>Ready?}
+    
+    %% Phase 4: HIL
+    subgraph Phase4["Phase 4: HIL Integration (6-8 weeks)"]
+        MCU[MCU Selection &<br/>Procurement]
+        Firmware[Firmware<br/>Development]
+        RLPort[RL Inference<br/>Porting]
+        HILBridge[HIL Interface<br/>Development]
+        RTValidation[Real-Time<br/>Validation]
+    end
+    
+    %% Gate 4
+    Gate4{Stage Gate 4:<br/>Firmware<br/>Validated?}
+    
+    %% Phase 5: Hardware
+    subgraph Phase5["Phase 5: Custom Hardware (10-14 weeks)"]
+        Schematic[Schematic<br/>Design]
+        PCB[PCB Layout &<br/>Fabrication]
+        Assembly[Board Assembly<br/>& Bring-Up]
+    end
+    
+    %% Gate 5
+    Gate5{Integration<br/>Gate:<br/>Hardware<br/>Ready?}
+    
+    %% Phase 6: Integration
+    subgraph Phase6["Phase 6: Integration & Validation (3-4 weeks)"]
+        EndToEnd[End-to-End<br/>Testing]
+        FinalDocs[Final<br/>Documentation]
+        Transfer[Knowledge<br/>Transfer]
+    end
+    
+    Complete([Project Complete])
+    
+    %% Main Flow
+    Start --> Phase1
+    Req --> CICD
+    CICD --> Docs
+    Docs --> Gate1
+    
+    Gate1 -->|Pass| Phase2
+    Gate1 -.->|Fail| Req
+    
+    Gazebo --> Dynamics
+    Dynamics --> Sensors
+    Sensors --> PID
+    PID --> SITLTest
+    SITLTest --> Gate2
+    
+    Gate2 -->|Pass| Phase3
+    Gate2 -.->|Fail| Gazebo
+    
+    RLFramework --> TrainEnv
+    TrainEnv --> PolicyArch
+    PolicyArch --> Training
+    Training --> RLEval
+    RLEval --> Compress
+    Compress --> Gate3
+    
+    Gate3 -->|Pass| Phase4
+    Gate3 -.->|Fail| Training
+    
+    MCU --> Firmware
+    Firmware --> RLPort
+    RLPort --> HILBridge
+    HILBridge --> RTValidation
+    RTValidation --> Gate4
+    
+    Gate4 -->|Pass| Phase5
+    Gate4 -.->|Fail| Firmware
+    
+    Schematic --> PCB
+    PCB --> Assembly
+    Assembly --> Gate5
+    
+    Gate5 -->|Pass| Phase6
+    Gate5 -.->|Fail| Schematic
+    
+    EndToEnd --> FinalDocs
+    FinalDocs --> Transfer
+    Transfer --> Complete
+    
+    %% Parallel Work (Phase 5 can overlap with Phase 4)
+    Phase4 -.->|"Can overlap"| Phase5
+    
+    %% Styling
+    classDef infrastructure fill:#F5A623,stroke:#333,stroke-width:2px,color:#000
+    classDef simulation fill:#4A90E2,stroke:#333,stroke-width:2px,color:#fff
+    classDef rl fill:#9013FE,stroke:#333,stroke-width:2px,color:#fff
+    classDef hil fill:#7ED321,stroke:#333,stroke-width:2px,color:#000
+    classDef hardware fill:#50E3C2,stroke:#333,stroke-width:2px,color:#000
+    classDef integration fill:#BD10E0,stroke:#333,stroke-width:2px,color:#fff
+    classDef gate fill:#D0021B,stroke:#333,stroke-width:3px,color:#fff
+    
+    class Req,CICD,Docs infrastructure
+    class Gazebo,Dynamics,Sensors,PID,SITLTest simulation
+    class RLFramework,TrainEnv,PolicyArch,Training,RLEval,Compress rl
+    class MCU,Firmware,RLPort,HILBridge,RTValidation hil
+    class Schematic,PCB,Assembly hardware
+    class EndToEnd,FinalDocs,Transfer integration
+    class Gate1,Gate2,Gate3,Gate4,Gate5 gate
+
+%% Key Insights:
+%% - Simulation-first, hardware-last methodology
+%% - Stage gates enforce quality at each transition
+%% - Feedback loops allow iteration on failures
+%% - Phase 4 and 5 can overlap (parallel execution)
+%% - Clear progression: SITL → RL → HIL → Hardware → Integration

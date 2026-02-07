@@ -1,0 +1,49 @@
+%% State Diagram Template
+%% Use this template for behavioral models and state machines
+
+stateDiagram-v2
+    [*] --> Initialization
+    
+    Initialization --> Idle : initialization_complete
+    
+    Idle --> Armed : arm_command
+    Idle --> Error : sensor_failure
+    
+    Armed --> Stabilize : takeoff_command
+    Armed --> Idle : disarm_command
+    Armed --> Failsafe : critical_error
+    
+    Stabilize --> Autonomous : mission_start
+    Stabilize --> Armed : land_complete
+    Stabilize --> Failsafe : sensor_loss
+    
+    Autonomous --> Stabilize : mission_complete
+    Autonomous --> Failsafe : critical_error
+    
+    Failsafe --> Armed : error_cleared
+    Failsafe --> [*] : emergency_shutdown
+    
+    Error --> Idle : error_reset
+    Error --> [*] : fatal_error
+    
+    %% State descriptions (optional)
+    note right of Initialization
+        System boot
+        Hardware checks
+        Sensor calibration
+    end note
+    
+    note right of Failsafe
+        Safe mode activated
+        Motors cut/reduced
+        Emergency landing
+    end note
+
+%% Tips:
+%% - Start state: [*]
+%% - End state: [*]
+%% - Transitions: StateA --> StateB : condition/event
+%% - Composite states: Use 'state X { ... }' for nested states
+%% - Add notes to explain complex states
+%% - Keep state names concise but descriptive
+%% - Group related transitions together

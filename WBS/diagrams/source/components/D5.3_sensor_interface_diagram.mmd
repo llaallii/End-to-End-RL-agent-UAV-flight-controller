@@ -1,0 +1,192 @@
+%% D5.3 - Sensor Interface Diagram
+%% UAV Flight Controller with On-Board Reinforcement Learning
+%% Priority 3 - Hardware Interface Detail
+%% Placement: 05_WBS_Phase5_Custom_Hardware.md (Section 5.6)
+
+graph TB
+    %% MCU Peripheral Blocks
+    subgraph MCU["STM32F7 Microcontroller"]
+        SPI1_Periph["SPI1 Peripheral<br/>18 MHz max<br/>DMA-enabled"]
+        I2C1_Periph["I2C1 Peripheral<br/>Fast Mode (400 kHz)<br/>DMA-enabled"]
+        UART4_Periph["UART4 Peripheral<br/>115200 baud<br/>DMA RX/TX"]
+        DMA_Controller["DMA Controller<br/>Stream management<br/>Priority arbitration"]
+        GPIO_Config["GPIO Configuration<br/>Chip select, interrupts<br/>Pull-ups/pull-downs"]
+        NVIC["NVIC Interrupt<br/>Controller<br/>Priority levels"]
+    end
+    
+    %% IMU Interface (SPI)
+    subgraph IMU_Interface["IMU Interface (SPI - High Speed)"]
+        IMU_Sensor["MPU-9250 or BMI088<br/>9-axis IMU<br/>Accel + Gyro + Mag"]
+        IMU_CS["CS (Chip Select)<br/>GPIO PA4<br/>Active LOW"]
+        IMU_INT["INT (Data Ready)<br/>GPIO PA5<br/>Rising edge trigger"]
+        IMU_SPI["SPI Signals:<br/>SCK: PA5 (18 MHz)<br/>MISO: PA6<br/>MOSI: PA7"]
+        
+        IMU_Buffer["FIFO Buffer<br/>512 bytes<br/>1 kHz sampling"]
+        IMU_Config["IMU Config Registers:<br/>• Sample rate: 1 kHz<br/>• Accel range: ±8g<br/>• Gyro range: ±2000°/s<br/>• DLPF: 42 Hz"]
+    end
+    
+    %% Barometer Interface (I2C)
+    subgraph Baro_Interface["Barometer Interface (I2C)"]
+        Baro_Sensor["MS5611 or BMP388<br/>Pressure sensor<br/>I2C Address: 0x76"]
+        Baro_I2C["I2C Signals:<br/>SCL: PB6 (400 kHz)<br/>SDA: PB7"]
+        Baro_Pullup["Pull-up resistors<br/>4.7 kΩ to 3.3V"]
+        Baro_Calib["Calibration Coefficients<br/>6x 16-bit values<br/>Read at startup"]
+        Baro_Conv["Conversion Timing:<br/>• Pressure: 8.22 ms<br/>• Temperature: 8.22 ms<br/>• Total: ~17 ms @ 50 Hz"]
+    end
+    
+    %% Magnetometer Interface (I2C)
+    subgraph Mag_Interface["Magnetometer Interface (I2C - Same Bus)"]
+        Mag_Sensor["HMC5883L or LIS3MDL<br/>3-axis magnetometer<br/>I2C Address: 0x1E"]
+        Mag_Calib["Calibration:<br/>• Hard iron offset<br/>• Soft iron matrix<br/>• Declination angle"]
+        Mag_Config["Mag Config:<br/>• Output rate: 75 Hz<br/>• Gain: ±1.3 Ga<br/>• Mode: Continuous"]
+    end
+    
+    %% GPS Interface (UART)
+    subgraph GPS_Interface["GPS Interface (UART)"]
+        GPS_Module["u-blox M8N/M9N<br/>GPS + GLONASS<br/>5-10 Hz update"]
+        GPS_UART["UART Signals:<br/>TX: PC10 (from GPS)<br/>RX: PC11 (to GPS)<br/>Baud: 115200"]
+        GPS_Protocol["UBX Protocol:<br/>• NAV-PVT messages<br/>• NAV-STATUS<br/>• Binary format<br/>• CRC validation"]
+        GPS_Antenna["Active Antenna<br/>3.3V LNA power<br/>SMA connector"]
+        GPS_PPS["PPS (1 Hz pulse)<br/>Time synchronization<br/>GPIO input"]
+    end
+    
+    %% Sensor Fusion Task
+    subgraph SensorFusion["Sensor Fusion Task (RTOS)"]
+        DataAcq["Data Acquisition<br/>100 Hz task<br/>Priority: High"]
+        Calibration["Sensor Calibration<br/>Bias removal<br/>Scale factors"]
+        Filtering["Filtering<br/>Low-pass filter<br/>Outlier rejection"]
+        StateEst["State Estimator<br/>EKF or Complementary<br/>12-state vector"]
+    end
+    
+    %% Timing Diagram
+    subgraph TimingDiagram["Timing & Synchronization"]
+        IMU_Timing["IMU INT (1 kHz)<br/>Triggers data read<br/>Highest priority"]
+        Baro_Timing["Baro Timer (50 Hz)<br/>Periodic conversion<br/>Medium priority"]
+        GPS_Timing["GPS UART RX<br/>Asynchronous<br/>DMA + callback"]
+        Mag_Timing["Mag Timer (75 Hz)<br/>Periodic read<br/>Low priority"]
+        
+        SyncNote["All data timestamped<br/>to system clock (μs)<br/>for EKF fusion"]
+    end
+    
+    %% Data Flow - IMU
+    SPI1_Periph --> IMU_SPI
+    GPIO_Config --> IMU_CS
+    GPIO_Config --> IMU_INT
+    
+    IMU_CS --> IMU_Sensor
+    IMU_SPI <--> IMU_Sensor
+    IMU_INT -.->|"Interrupt"| NVIC
+    NVIC -.->|"Trigger"| DMA_Controller
+    
+    IMU_Sensor --> IMU_Buffer
+    IMU_Config -.->|"Configure"| IMU_Sensor
+    IMU_Buffer --> DataAcq
+    
+    %% Data Flow - Barometer
+    I2C1_Periph --> Baro_I2C
+    Baro_Pullup --> Baro_I2C
+    Baro_I2C <--> Baro_Sensor
+    Baro_Calib -.->|"At startup"| Baro_Sensor
+    Baro_Sensor --> DataAcq
+    Baro_Conv -.->|"Timing constraint"| Baro_Sensor
+    
+    %% Data Flow - Magnetometer
+    I2C1_Periph --> Baro_I2C
+    Baro_I2C <--> Mag_Sensor
+    Mag_Config -.->|"Configure"| Mag_Sensor
+    Mag_Calib -.->|"Apply"| Mag_Sensor
+    Mag_Sensor --> DataAcq
+    
+    %% Data Flow - GPS  
+    UART4_Periph --> GPS_UART
+    GPS_UART <--> GPS_Module
+    GPS_Module --> GPS_Antenna
+    GPS_Module --> GPS_PPS
+    GPS_Protocol -.->|"Parse"| GPS_Module
+    GPS_Module --> DataAcq
+    GPS_PPS -.->|"Time sync"| NVIC
+    
+    %% Data Flow - Fusion
+    DataAcq --> Calibration
+    Calibration --> Filtering
+    Filtering --> StateEst
+    
+    %% Timing
+    IMU_INT -.->|"1 kHz"| IMU_Timing
+    IMU_Timing --> DataAcq
+    Baro_Timing --> DataAcq
+    GPS_Timing --> DataAcq
+    Mag_Timing --> DataAcq
+    
+    SyncNote -.-> StateEst
+    
+    %% DMA Configuration
+    DMA_Controller -.->|"SPI1 RX"| SPI1_Periph
+    DMA_Controller -.->|"I2C1 RX/TX"| I2C1_Periph
+    DMA_Controller -.->|"UART4 RX"| UART4_Periph
+    
+    %% Error Handling
+    ErrorDetect["Error Detection:<br/>• CRC validation<br/>• Timeout detection<br/>• Range checking<br/>• Health monitoring"]
+    
+    StateEst --> ErrorDetect
+    ErrorDetect -.->|"Fault flag"| DataAcq
+    
+    %% Styling
+    classDef mcu fill:#4A90E2,stroke:#333,stroke-width:2px,color:#fff
+    classDef sensor fill:#7ED321,stroke:#333,stroke-width:2px,color:#000
+    classDef interface fill:#50E3C2,stroke:#333,stroke-width:2px,color:#000
+    classDef processing fill:#9013FE,stroke:#333,stroke-width:2px,color:#fff
+    classDef timing fill:#F5A623,stroke:#333,stroke-width:2px,color:#000
+    classDef config fill:#B8E986,stroke:#333,stroke-width:1px,color:#000
+    
+    class SPI1_Periph,I2C1_Periph,UART4_Periph,DMA_Controller,GPIO_Config,NVIC mcu
+    class IMU_Sensor,Baro_Sensor,Mag_Sensor,GPS_Module,GPS_Antenna sensor
+    class IMU_CS,IMU_INT,IMU_SPI,Baro_I2C,Baro_Pullup,GPS_UART,GPS_PPS interface
+    class DataAcq,Calibration,Filtering,StateEst processing
+    class IMU_Timing,Baro_Timing,GPS_Timing,Mag_Timing,SyncNote timing
+    class IMU_Buffer,IMU_Config,Baro_Calib,Baro_Conv,Mag_Calib,Mag_Config,GPS_Protocol,ErrorDetect config
+
+%% Sensor Interface Summary:
+%% 
+%% IMU (MPU-9250/BMI088):
+%%   - Interface: SPI1 at 18 MHz
+%%   - Sample rate: 1 kHz (highest priority)
+%%   - DMA-based read triggered by INT pin
+%%   - FIFO buffering for reliability
+%%   - Accel: ±8g, Gyro: ±2000°/s, Mag: ±4.9 Ga
+%% 
+%% Barometer (MS5611/BMP388):
+%%   - Interface: I2C1 at 400 kHz (shared bus)
+%%   - Update rate: 50 Hz
+%%   - Conversion time: ~17 ms (pressure + temperature)
+%%   - Calibration coefficients loaded at startup
+%%   - Altitude resolution: ~10 cm
+%% 
+%% Magnetometer (HMC5883L/LIS3MDL):
+%%   - Interface: I2C1 at 400 kHz (shared bus)
+%%   - Update rate: 75 Hz
+%%   - 3-axis compass for heading
+%%   - Requires calibration (hard/soft iron)
+%%   - Declination compensation
+%% 
+%% GPS (u-blox M8N/M9N):
+%%   - Interface: UART4 at 115200 baud
+%%   - Update rate: 5-10 Hz
+%%   - Protocol: UBX binary (NAV-PVT messages)
+%%   - Position accuracy: 2.5m CEP
+%%   - PPS output for time synchronization
+%% 
+%% Data Flow:
+%%   1. IMU INT triggers DMA read (1 kHz)
+%%   2. Periodic timers trigger Baro/Mag reads
+%%   3. GPS UART RX handled by DMA + callback
+%%   4. All data timestamped and queued
+%%   5. Sensor fusion task processes at 100 Hz
+%%   6. Error detection flags invalid data
+%% 
+%% Timing:
+%%   - IMU: 1 kHz (every 1 ms)
+%%   - Baro: 50 Hz (every 20 ms)
+%%   - Mag: 75 Hz (every 13.3 ms)
+%%   - GPS: 5-10 Hz (every 100-200 ms)
+%%   - State estimator: 100 Hz (every 10 ms)

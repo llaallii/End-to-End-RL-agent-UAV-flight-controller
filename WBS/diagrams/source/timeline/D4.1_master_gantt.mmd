@@ -1,0 +1,67 @@
+%% D4.1 - Master Project Gantt Chart
+%% UAV Flight Controller with On-Board Reinforcement Learning
+%% Priority 1 - Foundation Diagram
+%% Placement: 00_WBS_Master_Overview.md (Section 4)
+
+gantt
+    title UAV RL Flight Controller - Master Project Timeline
+    dateFormat YYYY-MM-DD
+    
+    section Phase 1: Infrastructure
+    Requirements Management          :done, p1_1, 2026-02-08, 1w
+    Version Control & CI/CD         :done, p1_2, 2026-02-08, 1w
+    Documentation Framework         :active, p1_3, 2026-02-08, 2w
+    Stage Gate 1 Review            :milestone, sg1, 2026-02-22, 0d
+    
+    section Phase 2: SITL Baseline
+    Simulation Environment          :p2_1, after sg1, 2w
+    UAV Dynamics Model              :crit, p2_2, after p2_1, 3w
+    Sensor Simulation              :p2_3, after p2_1, 2w
+    Baseline PID Controller        :crit, p2_4, after p2_2, 2w
+    SITL Verification              :p2_5, after p2_4, 1.5w
+    Stage Gate 2 Review           :milestone, sg2, after p2_5, 0d
+    
+    section Phase 3: RL Control
+    RL Framework Integration       :p3_1, after sg2, 1.5w
+    Training Environment Design    :crit, p3_2, after p3_1, 2w
+    Policy Architecture           :p3_3, after p3_2, 1.5w
+    Training Iteration 1          :crit, p3_4a, after p3_3, 2w
+    Analysis & Adjustment         :p3_4b, after p3_4a, 3d
+    Training Iteration 2          :crit, p3_4c, after p3_4b, 2w
+    Training Iteration 3          :p3_4d, after p3_4c, 2w
+    Performance Evaluation        :p3_5, after p3_4d, 2w
+    Policy Compression           :p3_6, after p3_5, 1w
+    Stage Gate 3 Review         :milestone, sg3, after p3_6, 0d
+    
+    section Phase 4: HIL
+    MCU Selection & Procurement   :p4_1, after sg3, 1w
+    Firmware Architecture        :crit, p4_2, after p4_1, 1.5w
+    RL Inference Porting         :crit, p4_3, after p4_2, 1.5w
+    HIL Interface Development    :p4_4, after p4_2, 1.5w
+    Real-Time Validation        :p4_5, after p4_3, 1.5w
+    Safety & Fault Handling     :p4_6, after p4_4, 1w
+    Stage Gate 4 Review        :milestone, sg4, after p4_5, 0d
+    
+    section Phase 5: Hardware
+    Requirements Specification   :p5_1, after sg4, 1w
+    Schematic Design            :crit, p5_2, after p5_1, 2w
+    PCB Layout                  :crit, p5_3, after p5_2, 2w
+    BOM & Component Sourcing    :p5_4, after p5_2, 1.5w
+    PCB Fabrication (ext)       :p5_5a, after p5_3, 3w
+    Component Procurement (ext)  :p5_5b, after p5_4, 2w
+    Board Assembly              :p5_5c, after p5_5a, 1w
+    Hardware Bring-Up           :p5_6, after p5_5c, 2w
+    Integration Gate Review     :milestone, sg5, after p5_6, 0d
+    
+    section Phase 6: Integration
+    End-to-End Testing          :crit, p6_1, after sg5, 2w
+    Documentation Completion     :p6_2, after sg5, 1.5w
+    Knowledge Transfer          :p6_3, after p6_1, 1w
+    Project Completion         :milestone, complete, after p6_3, 0d
+
+%% Timeline Summary:
+%% - Total Duration: ~35-45 weeks (8.5-11 months)
+%% - Critical Path: Dynamics Model → PID → Training → Inference → Hardware → Testing
+%% - Long lead items: PCB fabrication (3 weeks external)
+%% - Training time is variable (2-6 weeks per iteration)
+%% - Stage gates enforce quality transitions

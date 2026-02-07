@@ -1,0 +1,218 @@
+%% D5.2 - Firmware Module Architecture
+%% UAV Flight Controller with On-Board Reinforcement Learning
+%% Priority 2 - Embedded Firmware
+%% Placement: 04_WBS_Phase4_HIL_Flight_Control.md (Section 4.2)
+
+graph TB
+    %% Hardware Abstraction Layer
+    subgraph HAL["Hardware Abstraction Layer (HAL)"]
+        HAL_UART[UART Driver<br/>HIL communication]
+        HAL_SPI[SPI Driver<br/>IMU interface]
+        HAL_I2C[I2C Driver<br/>Baro, Mag]
+        HAL_PWM[PWM Driver<br/>Motor outputs]
+        HAL_Timer[Hardware Timers<br/>Scheduling]
+        HAL_DMA[DMA Controller<br/>Data transfer]
+    end
+    
+    %% RTOS Kernel
+    subgraph RTOS["RTOS Kernel (FreeRTOS)"]
+        RTOS_Sched[Task Scheduler<br/>Preemptive multitasking]
+        RTOS_Queue[Message Queues<br/>Inter-task comm]
+        RTOS_Mutex[Mutexes & Semaphores<br/>Synchronization]
+        RTOS_Timer[Software Timers<br/>Periodic callbacks]
+    end
+    
+    %% Sensor Interface Module
+    subgraph SensorIf["Sensor Interface Module"]
+        IMU_Read[IMU Reader<br/>100 Hz sampling]
+        GPS_Read[GPS Reader<br/>10 Hz sampling]
+        Baro_Read[Barometer Reader<br/>50 Hz sampling]
+        Sensor_Calib[Sensor Calibration<br/>Bias removal]
+        Sensor_Queue[Sensor Data Queue<br/>FIFO buffer]
+    end
+    
+    %% HIL Interface Module
+    subgraph HILIf["HIL Interface Module (Phase 4)"]
+        HIL_RX[HIL Receiver<br/>Parse binary packets]
+        HIL_TX[HIL Transmitter<br/>Send motor commands]
+        HIL_Proto[Protocol Handler<br/>CRC validation]
+        HIL_Buffer[Ring Buffer<br/>DMA-based I/O]
+    end
+    
+    %% State Estimation Module
+    subgraph StateEstMod["State Estimation Module"]
+        EKF_Predict[EKF Prediction<br/>Propagate state]
+        EKF_Update[EKF Update<br/>Measurement fusion]
+        AttEst[Attitude Estimator<br/>Quaternion-based]
+        StateVector[State Vector<br/>12 states]
+    end
+    
+    %% RL Inference Module
+    subgraph RLMod["RL Inference Module"]
+        NN_Input[Input Layer<br/>Normalization]
+        NN_Hidden1[Hidden Layer 1<br/>128 neurons, ReLU]
+        NN_Hidden2[Hidden Layer 2<br/>128 neurons, ReLU]
+        NN_Output[Output Layer<br/>4 motor commands]
+        NN_Weights[Weight Storage<br/>Flash memory]
+    end
+    
+    %% Control Module (Baseline PID - Phase 2/4 fallback)
+    subgraph PIDMod["PID Control Module (Fallback)"]
+        PID_Pos[Position Controller<br/>Outer loop]
+        PID_Att[Attitude Controller<br/>Inner loop]
+        PID_Rate[Rate Controller<br/>Innermost loop]
+        PID_Params[PID Parameters<br/>Gains storage]
+    end
+    
+    %% Control Allocator
+    subgraph CtrlAlloc["Control Allocation"]
+        Mixer[Motor Mixer<br/>4 motor commands]
+        Limiter[Saturation Limiter<br/>[0, 1] clipping]
+        PWMGen[PWM Generator<br/>1000-2000 μs]
+    end
+    
+    %% Safety & Fault Management
+    subgraph SafetyMod["Safety & Fault Management"]
+        Watchdog[Watchdog Timer<br/>System heartbeat]
+        Failsafe[Failsafe Logic<br/>Timeout detection]
+        HealthMon[Health Monitor<br/>Sensor validation]
+        SafeMode[Safe Mode<br/>Controlled descent]
+    end
+    
+    %% Telemetry & Logging
+    subgraph Telemetry["Telemetry & Logging"]
+        BlackBox[Black Box Logger<br/>Flash storage]
+        MAVLink_IF[MAVLink Interface<br/>GCS communication]
+        Status_LED[Status LED Driver<br/>Visual feedback]
+    end
+    
+    %% Main Control Task
+    MainTask[Main Control Task<br/>100 Hz<br/>Highest priority]
+    
+    %% Data Flow - HAL to Sensors
+    HAL_SPI --> IMU_Read
+    HAL_I2C --> GPS_Read
+    HAL_I2C --> Baro_Read
+    
+    %% Data Flow - Sensors
+    IMU_Read --> Sensor_Calib
+    GPS_Read --> Sensor_Calib
+    Baro_Read --> Sensor_Calib
+    Sensor_Calib --> Sensor_Queue
+    
+    %% Data Flow - HIL (Phase 4)
+    HAL_UART --> HAL_DMA
+    HAL_DMA --> HIL_Buffer
+    HIL_Buffer --> HIL_RX
+    HIL_RX --> HIL_Proto
+    HIL_Proto -.->|"HIL mode"| Sensor_Queue
+    
+    %% Data Flow - RTOS
+    RTOS_Sched --> MainTask
+    Sensor_Queue --> RTOS_Queue
+    RTOS_Queue --> StateEstMod
+    
+    %% Data Flow - State Estimation
+    RTOS_Queue --> EKF_Predict
+    EKF_Predict --> EKF_Update
+    EKF_Update --> AttEst
+    AttEst --> StateVector
+    
+    %% Data Flow - RL Inference
+    StateVector --> NN_Input
+    NN_Input --> NN_Hidden1
+    NN_Hidden1 --> NN_Hidden2
+    NN_Hidden2 --> NN_Output
+    NN_Weights -.->|"Load weights"| NN_Hidden1
+    NN_Weights -.->|"Load weights"| NN_Hidden2
+    
+    %% Data Flow - PID (Fallback)
+    StateVector -.->|"Fallback mode"| PID_Pos
+    PID_Pos -.-> PID_Att
+    PID_Att -.-> PID_Rate
+    PID_Params -.-> PID_Pos
+    
+    %% Data Flow - Control Allocation
+    NN_Output --> Mixer
+    PID_Rate -.->|"Fallback"| Mixer
+    Mixer --> Limiter
+    Limiter --> PWMGen
+    
+    %% Data Flow - Motor Output
+    PWMGen --> HAL_PWM
+    
+    %% Data Flow - HIL TX (Phase 4)
+    PWMGen -.->|"HIL mode"| HIL_TX
+    HIL_TX -.-> HIL_Proto
+    HIL_Proto -.-> HIL_Buffer
+    HIL_Buffer -.-> HAL_DMA
+    HAL_DMA -.-> HAL_UART
+    
+    %% Data Flow - Safety
+    MainTask --> Watchdog
+    Sensor_Queue --> HealthMon
+    HealthMon --> Failsafe
+    Failsafe -.->|"Timeout"| SafeMode
+    SafeMode -.->|"Override"| Mixer
+    
+    %% Data Flow - Telemetry
+    StateVector --> BlackBox
+    StateVector --> MAVLink_IF
+    HealthMon --> Status_LED
+    HAL_Timer --> Status_LED
+    
+    %% RTOS Synchronization
+    RTOS_Mutex -.->|"Protect shared data"| StateVector
+    RTOS_Timer -.->|"100 Hz tick"| MainTask
+    
+    %% Styling
+    classDef hal fill:#F5A623,stroke:#333,stroke-width:2px,color:#000
+    classDef rtos fill:#4A90E2,stroke:#333,stroke-width:2px,color:#fff
+    classDef sensor fill:#7ED321,stroke:#333,stroke-width:2px,color:#000
+    classDef hil fill:#50E3C2,stroke:#333,stroke-width:2px,color:#000
+    classDef estimation fill:#4A90E2,stroke:#333,stroke-width:2px,color:#fff
+    classDef rl fill:#9013FE,stroke:#333,stroke-width:2px,color:#fff
+    classDef pid fill:#BD10E0,stroke:#333,stroke-width:2px,color:#fff
+    classDef control fill:#7ED321,stroke:#333,stroke-width:2px,color:#000
+    classDef safety fill:#D0021B,stroke:#333,stroke-width:2px,color:#fff
+    classDef telemetry fill:#B8E986,stroke:#333,stroke-width:2px,color:#000
+    classDef main fill:#9013FE,stroke:#333,stroke-width:3px,color:#fff
+    
+    class HAL_UART,HAL_SPI,HAL_I2C,HAL_PWM,HAL_Timer,HAL_DMA hal
+    class RTOS_Sched,RTOS_Queue,RTOS_Mutex,RTOS_Timer rtos
+    class IMU_Read,GPS_Read,Baro_Read,Sensor_Calib,Sensor_Queue sensor
+    class HIL_RX,HIL_TX,HIL_Proto,HIL_Buffer hil
+    class EKF_Predict,EKF_Update,AttEst,StateVector estimation
+    class NN_Input,NN_Hidden1,NN_Hidden2,NN_Output,NN_Weights rl
+    class PID_Pos,PID_Att,PID_Rate,PID_Params pid
+    class Mixer,Limiter,PWMGen control
+    class Watchdog,Failsafe,HealthMon,SafeMode safety
+    class BlackBox,MAVLink_IF,Status_LED telemetry
+    class MainTask main
+
+%% Firmware Module Architecture Summary:
+%% 
+%% RTOS Tasks (FreeRTOS):
+%%   1. Main Control Task (100 Hz, Priority 5) - RL inference + control
+%%   2. Sensor Task (100 Hz, Priority 4) - IMU/GPS/Baro reading
+%%   3. HIL Communication Task (Background, Priority 3) - UART RX/TX
+%%   4. Telemetry Task (10 Hz, Priority 2) - MAVLink + logging
+%%   5. Safety Monitor Task (50 Hz, Priority 6) - Watchdog + health
+%% 
+%% Memory Layout:
+%%   - Flash: Program code (~200 KB) + NN weights (~50 KB)
+%%   - RAM: RTOS tasks (~20 KB) + buffers (~10 KB) + NN activations (~5 KB)
+%%   - Total: <512 KB Flash, <64 KB RAM (fits STM32F4/F7)
+%% 
+%% Timing Budget (10ms control loop):
+%%   - Sensor read: <1ms
+%%   - State estimation (EKF): <2ms
+%%   - NN inference: <5ms
+%%   - Control allocation: <0.5ms
+%%   - Motor update: <0.5ms
+%%   - Margin: ~1ms
+%% 
+%% Modes:
+%%   - SITL: Disabled (software-only)
+%%   - HIL: Enabled (sensors from Gazebo via UART)
+%%   - Flight: Enabled (real sensors via SPI/I2C)

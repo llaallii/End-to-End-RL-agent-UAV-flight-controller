@@ -1,0 +1,138 @@
+%% D2.2 - RL Training Pipeline
+%% UAV Flight Controller with On-Board Reinforcement Learning
+%% Priority 1 - Critical Process
+%% Placement: 03_WBS_Phase3_RL_Control.md (Section 3.4)
+
+flowchart TD
+    Start([RL Training Start])
+    
+    %% Environment Design Phase
+    subgraph EnvDesign["Environment Design Phase"]
+        ObsSpace[Define Observation Space<br/>position, velocity, attitude, rates]
+        ActSpace[Define Action Space<br/>motor commands / body forces]
+        RewardFunc[Design Reward Function<br/>goal achievement + penalties]
+        Termination[Termination Conditions<br/>crash / success / timeout]
+        DomainRand[Domain Randomization<br/>mass, inertia, noise]
+    end
+    
+    %% Policy Architecture Phase
+    subgraph PolicyArch["Policy Architecture Phase"]
+        NetworkArch[Neural Network Design<br/>2-3 layers, 64-256 units]
+        Normalization[Input/Output Normalization<br/>observations to [-1,1]]
+        PolicyType[Policy Type Selection<br/>Stochastic (PPO) vs Deterministic]
+    end
+    
+    %% Training Loop
+    subgraph TrainingLoop["Training Loop (Multiple Iterations)"]
+        Initialize[Initialize Policy<br/>Random or Pretrained]
+        
+        subgraph Episode["Episode Loop"]
+            Reset[Reset Environment<br/>Random initial state]
+            Observe[Get Observations<br/>from simulation]
+            InferAction[Policy Forward Pass<br/>Neural network inference]
+            Execute[Execute Action<br/>Apply to simulator]
+            GetReward[Calculate Reward<br/>Evaluate performance]
+            CheckTerm{Terminal<br/>Condition?}
+        end
+        
+        CollectData[Collect Episode Data<br/>Trajectories buffer]
+        UpdatePolicy[Update Policy Parameters<br/>PPO/SAC algorithm]
+        LogMetrics[Log Metrics<br/>Reward, episode length]
+        
+        CheckConverge{Converged?<br/>Performance<br/>plateaued?}
+    end
+    
+    %% Hyperparameter Tuning
+    subgraph Tuning["Hyperparameter Tuning"]
+        AnalyzePerf[Analyze Performance<br/>Training curves, behaviors]
+        IdentifyIssues[Identify Issues<br/>Instability, slow learning]
+        AdjustHyper[Adjust Hyperparameters<br/>Learning rate, batch size]
+    end
+    
+    %% Evaluation Phase
+    subgraph Evaluation["Evaluation Phase"]
+        EvalEnv[Create Evaluation Environments<br/>Unseen scenarios]
+        TestPolicy[Test Trained Policy<br/>100+ episodes]
+        Metrics[Calculate Metrics<br/>Success rate, tracking error]
+        CompareBaseline[Compare to PID Baseline<br/>Performance analysis]
+    end
+    
+    %% Compression Phase
+    subgraph Compression["Compression for Deployment"]
+        Quantize[Quantize Weights<br/>FP32 → FP16 or INT8]
+        Prune[Prune Redundant Connections<br/>Optional]
+        ConvertModel[Convert to Deployment Format<br/>ONNX, TFLite, custom]
+        ValidateCompressed[Validate Compressed Policy<br/>Accuracy check]
+    end
+    
+    Complete([RL Policy Ready<br/>for HIL])
+    
+    %% Flow
+    Start --> EnvDesign
+    ObsSpace --> ActSpace
+    ActSpace --> RewardFunc
+    RewardFunc --> Termination
+    Termination --> DomainRand
+    
+    DomainRand --> PolicyArch
+    NetworkArch --> Normalization
+    Normalization --> PolicyType
+    
+    PolicyType --> Initialize
+    Initialize --> Reset
+    Reset --> Observe
+    Observe --> InferAction
+    InferAction --> Execute
+    Execute --> GetReward
+    GetReward --> CheckTerm
+    
+    CheckTerm -->|No| Observe
+    CheckTerm -->|Yes| CollectData
+    
+    CollectData --> UpdatePolicy
+    UpdatePolicy --> LogMetrics
+    LogMetrics --> CheckConverge
+    
+    CheckConverge -->|No| Reset
+    CheckConverge -->|Maybe| Tuning
+    
+    AnalyzePerf --> IdentifyIssues
+    IdentifyIssues --> AdjustHyper
+    AdjustHyper --> Initialize
+    
+    CheckConverge -->|Yes| Evaluation
+    
+    EvalEnv --> TestPolicy
+    TestPolicy --> Metrics
+    Metrics --> CompareBaseline
+    
+    CompareBaseline --> Compression
+    
+    Quantize --> Prune
+    Prune --> ConvertModel
+    ConvertModel --> ValidateCompressed
+    
+    ValidateCompressed --> Complete
+    
+    %% Styling
+    classDef design fill:#4A90E2,stroke:#333,stroke-width:2px,color:#fff
+    classDef training fill:#9013FE,stroke:#333,stroke-width:2px,color:#fff
+    classDef tuning fill:#F5A623,stroke:#333,stroke-width:2px,color:#000
+    classDef eval fill:#7ED321,stroke:#333,stroke-width:2px,color:#000
+    classDef compress fill:#50E3C2,stroke:#333,stroke-width:2px,color:#000
+    classDef decision fill:#D0021B,stroke:#333,stroke-width:2px,color:#fff
+    
+    class ObsSpace,ActSpace,RewardFunc,Termination,DomainRand design
+    class NetworkArch,Normalization,PolicyType design
+    class Initialize,Reset,Observe,InferAction,Execute,GetReward,CollectData,UpdatePolicy,LogMetrics training
+    class AnalyzePerf,IdentifyIssues,AdjustHyper tuning
+    class EvalEnv,TestPolicy,Metrics,CompareBaseline eval
+    class Quantize,Prune,ConvertModel,ValidateCompressed compress
+    class CheckTerm,CheckConverge decision
+
+%% Key Features:
+%% - Complete ML workflow from environment design to deployment
+%% - Shows iterative nature of RL training
+%% - Hyperparameter tuning feedback loop
+%% - Compression pipeline for embedded deployment
+%% - Evaluation and baseline comparison

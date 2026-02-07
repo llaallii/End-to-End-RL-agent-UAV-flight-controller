@@ -1,0 +1,164 @@
+%% D5.5 - Neural Network Architecture Diagram
+%% UAV Flight Controller with On-Board Reinforcement Learning
+%% Priority 2 - RL Policy Structure
+%% Placement: 03_WBS_Phase3_RL_Control.md (Section 3.3)
+
+graph LR
+    %% Input Layer
+    subgraph InputLayer["Input Layer (15 neurons)"]
+        direction TB
+        I_PosX["x (m)"]
+        I_PosY["y (m)"]
+        I_PosZ["z (m)"]
+        I_VelX["vx (m/s)"]
+        I_VelY["vy (m/s)"]
+        I_VelZ["vz (m/s)"]
+        I_Roll["roll (rad)"]
+        I_Pitch["pitch (rad)"]
+        I_Yaw["yaw (rad)"]
+        I_RateP["p (rad/s)"]
+        I_RateQ["q (rad/s)"]
+        I_RateR["r (rad/s)"]
+        I_GoalX["goal_x (m)"]
+        I_GoalY["goal_y (m)"]
+        I_GoalZ["goal_z (m)"]
+    end
+    
+    %% Hidden Layer 1
+    subgraph Hidden1["Hidden Layer 1 (128 neurons)"]
+        direction TB
+        H1_Note["128 neurons<br/>ReLU activation<br/>Weights: 15×128 = 1,920<br/>Biases: 128<br/>Total: 2,048 params"]
+        H1_1["Neuron 1"]
+        H1_2["Neuron 2"]
+        H1_3["Neuron 3"]
+        H1_Dots["..."]
+        H1_128["Neuron 128"]
+    end
+    
+    %% Hidden Layer 2
+    subgraph Hidden2["Hidden Layer 2 (128 neurons)"]
+        direction TB
+        H2_Note["128 neurons<br/>ReLU activation<br/>Weights: 128×128 = 16,384<br/>Biases: 128<br/>Total: 16,512 params"]
+        H2_1["Neuron 1"]
+        H2_2["Neuron 2"]
+        H2_3["Neuron 3"]
+        H2_Dots["..."]
+        H2_128["Neuron 128"]
+    end
+    
+    %% Output Layer (Actor)
+    subgraph OutputLayer["Output Layer (4 neurons)"]
+        direction TB
+        O_Note["4 neurons<br/>Tanh activation<br/>Weights: 128×4 = 512<br/>Biases: 4<br/>Total: 516 params"]
+        O_M1["Motor 1<br/>∈ [-1, 1]"]
+        O_M2["Motor 2<br/>∈ [-1, 1]"]
+        O_M3["Motor 3<br/>∈ [-1, 1]"]
+        O_M4["Motor 4<br/>∈ [-1, 1]"]
+    end
+    
+    %% Value Function Head (Critic - for PPO training only)
+    subgraph ValueHead["Value Function Head (PPO Critic)"]
+        direction TB
+        V_Note["1 neuron<br/>Linear activation<br/>Weights: 128×1 = 128<br/>Bias: 1<br/>Total: 129 params<br/><br/>NOT deployed on MCU<br/>(training only)"]
+        V_Out["V(s)<br/>State value"]
+    end
+    
+    %% Connections - Input to Hidden1
+    I_PosX --> H1_1
+    I_PosX --> H1_2
+    I_PosX --> H1_Dots
+    I_PosY --> H1_1
+    I_VelX --> H1_2
+    I_GoalZ --> H1_128
+    
+    %% Connections - Hidden1 to Hidden2
+    H1_1 --> H2_1
+    H1_2 --> H2_2
+    H1_3 --> H2_3
+    H1_Dots --> H2_Dots
+    H1_128 --> H2_128
+    
+    %% Connections - Hidden2 to Output
+    H2_1 --> O_M1
+    H2_2 --> O_M2
+    H2_3 --> O_M3
+    H2_Dots --> O_M4
+    H2_128 --> O_M1
+    H2_128 --> O_M2
+    H2_128 --> O_M3
+    H2_128 --> O_M4
+    
+    %% Connections - Hidden2 to Value (PPO only)
+    H2_1 -.->|"Training only"| V_Out
+    H2_2 -.->|"Training only"| V_Out
+    H2_128 -.->|"Training only"| V_Out
+    
+    %% Annotations
+    TotalParams[/"Total Parameters:<br/>Actor: 2,048 + 16,512 + 516 = 19,076<br/>(Deployed on MCU)<br/><br/>Critic: +129 (training only)<br/><br/>Memory: ~76 KB (FP32)<br/>After quantization: ~19 KB (INT8)"/]
+    
+    Hidden2 --> TotalParams
+    
+    Timing[/"Inference Timing:<br/>Forward pass (FP32): ~8ms<br/>Forward pass (INT8): ~3ms<br/>Target: <5ms for 100 Hz control"/]
+    
+    OutputLayer --> Timing
+    
+    %% Styling
+    classDef input fill:#F5A623,stroke:#333,stroke-width:2px,color:#000
+    classDef hidden fill:#9013FE,stroke:#333,stroke-width:2px,color:#fff
+    classDef output fill:#7ED321,stroke:#333,stroke-width:2px,color:#000
+    classDef value fill:#BD10E0,stroke:#333,stroke-width:2px,color:#fff,stroke-dasharray: 5 5
+    classDef annotation fill:#E0E0E0,stroke:#333,stroke-width:1px,color:#000
+    
+    class I_PosX,I_PosY,I_PosZ,I_VelX,I_VelY,I_VelZ,I_Roll,I_Pitch,I_Yaw,I_RateP,I_RateQ,I_RateR,I_GoalX,I_GoalY,I_GoalZ input
+    class H1_1,H1_2,H1_3,H1_Dots,H1_128,H1_Note hidden
+    class H2_1,H2_2,H2_3,H2_Dots,H2_128,H2_Note hidden
+    class O_M1,O_M2,O_M3,O_M4,O_Note output
+    class V_Out,V_Note value
+    class TotalParams,Timing annotation
+
+%% Neural Network Architecture Summary:
+%% 
+%% Network Type: Feed-Forward Multilayer Perceptron (MLP)
+%% 
+%% Architecture:
+%%   Input: 15 neurons (state + goal)
+%%   Hidden 1: 128 neurons, ReLU
+%%   Hidden 2: 128 neurons, ReLU
+%%   Output (Actor): 4 neurons, Tanh → motor commands
+%%   Value (Critic): 1 neuron, Linear → state value (training only)
+%% 
+%% Parameter Count:
+%%   Layer 1: 15×128 + 128 = 2,048
+%%   Layer 2: 128×128 + 128 = 16,512
+%%   Actor Output: 128×4 + 4 = 516
+%%   Critic Output: 128×1 + 1 = 129 (not deployed)
+%%   TOTAL (Actor only): 19,076 parameters
+%% 
+%% Memory Footprint:
+%%   FP32: 19,076 × 4 bytes = 76,304 bytes (~76 KB)
+%%   INT8 (quantized): 19,076 × 1 byte = 19,076 bytes (~19 KB)
+%%   + Activation buffers: ~5 KB
+%%   TOTAL (INT8): ~24 KB (fits comfortably in 64 KB RAM)
+%% 
+%% Training Algorithm: Proximal Policy Optimization (PPO)
+%%   - Actor network: deployed on MCU
+%%   - Critic network: used during training only, discarded
+%% 
+%% Quantization:
+%%   - Training: FP32 for accuracy
+%%   - Deployment: INT8 for speed & memory
+%%   - Post-training quantization (PTQ) or quantization-aware training (QAT)
+%% 
+%% Inference Performance:
+%%   - FP32: ~8ms (STM32F4 @ 180 MHz)
+%%   - INT8: ~3ms (with optimized CMSIS-NN kernels)
+%%   - Target: <5ms to fit in 100 Hz control loop (10ms period)
+%% 
+%% Activation Functions:
+%%   - Hidden layers: ReLU (fast, gradient flow)
+%%   - Output: Tanh (bounded output ∈ [-1, 1])
+%%   - Value: Linear (unbounded state value)
+%% 
+%% Normalization:
+%%   - Input: Standardized to ~N(0,1) using training statistics
+%%   - Output: Denormalized to motor range [0, 1] or [1000, 2000] μs

@@ -1,0 +1,129 @@
+%% D3.1 - SITL Data Flow Diagram
+%% UAV Flight Controller with On-Board Reinforcement Learning
+%% Priority 1 - Critical Data Flow
+%% Placement: 02_WBS_Phase2_SITL_Baseline.md (Section 2.5)
+
+graph LR
+    %% Data Sources
+    InitState[("Initial State<br/>x, v, θ, ω")]
+    
+    %% UAV Dynamics Model
+    subgraph Dynamics["UAV Dynamics Model"]
+        EOM[Equations of Motion<br/>6-DOF rigid body]
+        MotorModel[Motor & Propeller Model<br/>τ_motor = 50-100ms]
+        Aero[Aerodynamic Effects<br/>Drag forces]
+        Integration[Physics Integration<br/>RK4, dt=0.001-0.004s]
+    end
+    
+    %% State Vector
+    TrueState[/"True State Vector<br/>pos: [x,y,z] (m)<br/>vel: [vx,vy,vz] (m/s)<br/>att: [roll,pitch,yaw] (rad)<br/>rates: [p,q,r] (rad/s)"/]
+    
+    %% Sensor Models
+    subgraph Sensors["Sensor Simulation"]
+        IMU["IMU Sensor<br/>100+ Hz"]
+        GPS["GPS (optional)<br/>5-10 Hz"]
+        Baro["Barometer (optional)<br/>20-50 Hz"]
+        Mag["Magnetometer (optional)<br/>50-100 Hz"]
+        
+        NoiseGen[Noise Generator<br/>White noise + bias]
+        Transform[Frame Transforms<br/>World → Body frame]
+    end
+    
+    %% Measurements
+    Measurements[/"Sensor Measurements<br/>IMU: accel (m/s²), gyro (rad/s)<br/>GPS: position (m)<br/>Baro: altitude (m)<br/>Mag: heading (rad)"/]
+    
+    %% Controller
+    subgraph Controller["Baseline PID Controller"]
+        StateEst[State Estimator<br/>Sensor fusion / EKF]
+        
+        subgraph Cascade["Cascaded Control"]
+            PosCtrl[Position Controller<br/>Outer loop, ~10 Hz]
+            VelCtrl[Velocity/Altitude Ctrl<br/>Middle loop, ~50 Hz]
+            AttCtrl[Attitude Controller<br/>Inner loop, ~100 Hz]
+        end
+        
+        Mixer[Control Mixer<br/>Thrust distribution]
+    end
+    
+    %% Estimated State
+    EstState[/"Estimated State<br/>x̂, v̂, θ̂, ω̂"/]
+    
+    %% Control Commands
+    CtrlCmd[/"Control Commands<br/>Motor 1-4: PWM<br/>or<br/>Thrust (N)"/]
+    
+    %% Back to Dynamics
+    Actuators[Motor Actuators<br/>Command → Force]
+    
+    %% External Inputs
+    Setpoint[("Setpoint<br/>Desired position<br/>or trajectory")]
+    Disturbances[("External Disturbances<br/>Wind, turbulence")]
+    
+    %% Data Flow
+    InitState --> Integration
+    
+    Setpoint --> PosCtrl
+    
+    CtrlCmd --> Actuators
+    Actuators --> MotorModel
+    
+    MotorModel --> EOM
+    Aero --> EOM
+    Disturbances -.-> EOM
+    EOM --> Integration
+    
+    Integration --> TrueState
+    
+    TrueState --> Transform
+    Transform --> IMU
+    Transform --> GPS
+    Transform --> Baro
+    Transform --> Mag
+    
+    NoiseGen -.-> IMU
+    NoiseGen -.-> GPS
+    NoiseGen -.-> Baro
+    NoiseGen -.-> Mag
+    
+    IMU --> Measurements
+    GPS --> Measurements
+    Baro --> Measurements
+    Mag --> Measurements
+    
+    Measurements --> StateEst
+    StateEst --> EstState
+    
+    EstState --> PosCtrl
+    EstState --> VelCtrl
+    EstState --> AttCtrl
+    
+    PosCtrl -->|"Velocity setpoint"| VelCtrl
+    VelCtrl -->|"Attitude setpoint"| AttCtrl
+    AttCtrl -->|"Thrust commands"| Mixer
+    
+    Mixer --> CtrlCmd
+    
+    %% Logging
+    TrueState -.->|"Ground truth"| Logger[("Data Logger<br/>Telemetry, Plots")]
+    Measurements -.-> Logger
+    CtrlCmd -.-> Logger
+    
+    %% Styling
+    classDef dynamics fill:#4A90E2,stroke:#333,stroke-width:2px,color:#fff
+    classDef sensors fill:#F5A623,stroke:#333,stroke-width:2px,color:#000
+    classDef controller fill:#9013FE,stroke:#333,stroke-width:2px,color:#fff
+    classDef data fill:#7ED321,stroke:#333,stroke-width:2px,color:#000
+    classDef external fill:#9B9B9B,stroke:#333,stroke-width:2px,color:#fff
+    
+    class EOM,MotorModel,Aero,Integration,Actuators dynamics
+    class IMU,GPS,Baro,Mag,NoiseGen,Transform sensors
+    class StateEst,PosCtrl,VelCtrl,AttCtrl,Mixer controller
+    class TrueState,Measurements,EstState,CtrlCmd data
+    class InitState,Setpoint,Disturbances,Logger external
+
+%% Data Flow Summary:
+%% 1. True state flows through sensor models with noise
+%% 2. Measurements feed state estimator
+%% 3. Estimated state used by cascaded PID controller
+%% 4. Control commands drive motor actuators
+%% 5. Motor forces feed back into dynamics model
+%% 6. Closed-loop control at 100 Hz (inner loop)

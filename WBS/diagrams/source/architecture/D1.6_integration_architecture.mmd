@@ -1,0 +1,153 @@
+%% D1.6 - End-to-End Integration Architecture
+%% UAV Flight Controller with On-Board Reinforcement Learning
+%% Priority 2 - Integration View
+%% Placement: 06_WBS_Phase6_Integration_Validation.md (Top of document)
+
+graph TB
+    %% Three major stages shown as vertical lanes
+    
+    %% Stage 1: SITL
+    subgraph Stage1["STAGE 1: SITL (Software-in-the-Loop)"]
+        direction TB
+        
+        SITL_Env["Gazebo Simulation<br/>✓ Pure software<br/>✓ Fast iteration<br/>✓ Perfect sensors"]
+        
+        SITL_Dynamics["UAV Dynamics Model<br/>✓ 6-DOF equations<br/>✓ Motor models<br/>✓ Aerodynamics"]
+        
+        SITL_Sensors["Simulated Sensors<br/>✓ IMU with noise<br/>✓ Optional GPS/Baro<br/>✓ Configurable noise"]
+        
+        SITL_Controller["PID Baseline Controller<br/>✓ Cascaded structure<br/>✓ Position/Velocity/Attitude<br/>✓ Tuned gains"]
+        
+        SITL_Output["Outputs:<br/>• Validated simulation<br/>• Baseline performance<br/>• PID parameters<br/>• Test scenarios"]
+    end
+    
+    %% Stage 2: RL Training
+    subgraph Stage2["STAGE 2: RL Training (On SITL)"]
+        direction TB
+        
+        RL_Framework["RL Training Framework<br/>✓ Stable-Baselines3<br/>✓ GPU-accelerated<br/>✓ Parallel envs"]
+        
+        RL_Env["Gym Environment Wrapper<br/>✓ Obs/Action spaces<br/>✓ Reward function<br/>✓ Domain randomization"]
+        
+        RL_Training["Policy Training<br/>✓ PPO/SAC algorithm<br/>✓ 3+ iterations<br/>✓ Hyperparameter tuning"]
+        
+        RL_Policy["Trained Neural Network<br/>✓ 2-3 hidden layers<br/>✓ 64-256 units/layer<br/>✓ Performance ≥ PID"]
+        
+        RL_Compress["Policy Compression<br/>✓ Quantization (FP32→FP16)<br/>✓ Size <10MB (ideally <1MB)<br/>✓ Accuracy validated"]
+        
+        RL_Output["Outputs:<br/>• Compressed RL policy<br/>• Training metrics<br/>• Perf vs baseline<br/>• ONNX/TFLite model"]
+    end
+    
+    %% Stage 3: HIL
+    subgraph Stage3["STAGE 3: HIL (Hardware-in-the-Loop)"]
+        direction TB
+        
+        HIL_Sim["Gazebo Simulation<br/>✓ Same as SITL<br/>✓ HIL bridge plugin<br/>✓ 100 Hz sync"]
+        
+        HIL_Interface["HIL Communication Bridge<br/>✓ Serial/USB protocol<br/>✓ Sensor data: Sim → MCU<br/>✓ Commands: MCU → Sim"]
+        
+        HIL_MCU["MCU Development Board<br/>✓ STM32F4/F7<br/>✓ FreeRTOS firmware<br/>✓ Real-time constraints"]
+        
+        HIL_Firmware["Embedded Firmware<br/>✓ Sensor fusion<br/>✓ RL inference engine<br/>✓ Safety systems"]
+        
+        HIL_Inference["RL Policy on MCU<br/>✓ TFLite Micro<br/>✓ <10ms inference<br/>✓ Deterministic timing"]
+        
+        HIL_Output["Outputs:<br/>• Validated firmware<br/>• Real-time metrics<br/>• MCU performance<br/>• Safety validated"]
+    end
+    
+    %% Stage 4: Custom Hardware
+    subgraph Stage4["STAGE 4: Custom Hardware"]
+        direction TB
+        
+        HW_PCB["Custom Flight Controller PCB<br/>✓ Same MCU as HIL<br/>✓ Power management<br/>✓ Sensor interfaces"]
+        
+        HW_Sensors["Physical Sensors<br/>✓ IMU (I2C/SPI)<br/>✓ GPS (optional)<br/>✓ Barometer (optional)"]
+        
+        HW_Firmware["Production Firmware<br/>✓ Same as HIL<br/>✓ Physical sensor drivers<br/>✓ Motor PWM outputs"]
+        
+        HW_Motors["Motor Drivers & ESCs<br/>✓ PWM input<br/>✓ 4x BLDC motors<br/>✓ Thrust mapping"]
+        
+        HW_UAV["Physical UAV<br/>✓ Assembled quadrotor<br/>✓ Battery power<br/>✓ Ready for flight"]
+        
+        HW_Output["Outputs:<br/>• Flight-ready hardware<br/>• System integration<br/>• Ground tests pass<br/>• Flight qualified"]
+    end
+    
+    %% Stage 5: Final Validation
+    subgraph Stage5["STAGE 5: Full System Validation"]
+        direction TB
+        
+        Val_RegSITL["SITL Regression Tests<br/>✓ Verify no degradation<br/>✓ Baseline revalidation"]
+        
+        Val_RegHIL["HIL Regression Tests<br/>✓ Firmware consistency<br/>✓ Real-time verified"]
+        
+        Val_HWTest["Hardware Integration Tests<br/>✓ End-to-end on real HW<br/>✓ Sensor-actuator loop<br/>✓ Ground testing"]
+        
+        Val_Comparison["Cross-Stage Comparison<br/>✓ PID vs RL performance<br/>✓ SITL vs HIL vs HW<br/>✓ Metrics analysis"]
+        
+        Val_Output["Final Deliverables:<br/>• Complete system<br/>• Full documentation<br/>• Test reports<br/>• Lessons learned"]
+    end
+    
+    %% Progression Flow (Stage Gates)
+    SITL_Output ==>|"Gate 1: Simulation Validated"| RL_Framework
+    RL_Output ==>|"Gate 2: RL Policy Ready"| HIL_Sim
+    HIL_Output ==>|"Gate 3: Firmware Validated"| HW_PCB
+    HW_Output ==>|"Gate 4: Hardware Ready"| Val_RegSITL
+    
+    %% Internal Flows
+    SITL_Env --> SITL_Dynamics
+    SITL_Dynamics --> SITL_Sensors
+    SITL_Sensors --> SITL_Controller
+    SITL_Controller --> SITL_Output
+    
+    RL_Framework --> RL_Env
+    RL_Env <--> SITL_Env
+    RL_Env --> RL_Training
+    RL_Training --> RL_Policy
+    RL_Policy --> RL_Compress
+    RL_Compress --> RL_Output
+    
+    HIL_Sim <--> HIL_Interface
+    HIL_Interface <--> HIL_MCU
+    HIL_MCU --> HIL_Firmware
+    HIL_Firmware --> HIL_Inference
+    HIL_Inference --> HIL_Output
+    
+    HW_PCB --> HW_Sensors
+    HW_PCB --> HW_Firmware
+    HW_Firmware --> HW_Motors
+    HW_Sensors --> HW_Firmware
+    HW_Motors --> HW_UAV
+    HW_UAV --> HW_Output
+    
+    Val_RegSITL --> Val_RegHIL
+    Val_RegHIL --> Val_HWTest
+    Val_HWTest --> Val_Comparison
+    Val_Comparison --> Val_Output
+    
+    %% Key commonalities
+    SITL_Env -.->|"Same dynamics"| HIL_Sim
+    RL_Compress -.->|"Same policy"| HIL_Inference
+    HIL_Firmware -.->|"Same firmware"| HW_Firmware
+    
+    %% Styling
+    classDef sitl fill:#4A90E2,stroke:#333,stroke-width:2px,color:#fff
+    classDef rl fill:#9013FE,stroke:#333,stroke-width:2px,color:#fff
+    classDef hil fill:#F5A623,stroke:#333,stroke-width:2px,color:#000
+    classDef hardware fill:#7ED321,stroke:#333,stroke-width:2px,color:#000
+    classDef validation fill:#BD10E0,stroke:#333,stroke-width:2px,color:#fff
+    classDef output fill:#D0021B,stroke:#333,stroke-width:2px,color:#fff
+    
+    class SITL_Env,SITL_Dynamics,SITL_Sensors,SITL_Controller sitl
+    class RL_Framework,RL_Env,RL_Training,RL_Policy,RL_Compress rl
+    class HIL_Sim,HIL_Interface,HIL_MCU,HIL_Firmware,HIL_Inference hil
+    class HW_PCB,HW_Sensors,HW_Firmware,HW_Motors,HW_UAV hardware
+    class Val_RegSITL,Val_RegHIL,Val_HWTest,Val_Comparison validation
+    class SITL_Output,RL_Output,HIL_Output,HW_Output,Val_Output output
+
+%% Integration Architecture Notes:
+%% - Shows complete progression from simulation to physical hardware
+%% - Each stage builds on validated outputs from previous stage
+%% - Stage gates enforce quality transitions
+%% - Common elements (dynamics, policy, firmware) maintain consistency
+%% - Final validation tests across all stages
+%% - Simulation-first approach minimizes hardware risk

@@ -1,0 +1,51 @@
+%% Data Flow Diagram Template
+%% Use this template for showing data transformations and flows
+
+graph LR
+    %% Data Sources
+    Source1[(Data Source 1)]
+    Source2[(Data Source 2)]
+    
+    %% Processing Stages
+    Process1[Process Stage 1]
+    Process2[Process Stage 2]
+    Process3[Process Stage 3]
+    
+    %% Data Stores
+    Store1[("Data Store")]
+    
+    %% Data Sinks/Outputs
+    Output1[/Output 1/]
+    Output2[/Output 2/]
+    
+    %% Data Flow Connections (label with data type/format)
+    Source1 -->|"Raw Sensor Data<br/>(100 Hz)"| Process1
+    Source2 -->|"State Vector<br/>(float[12])"| Process1
+    
+    Process1 -->|"Filtered Data"| Process2
+    Process1 -->|"Log Data"| Store1
+    
+    Process2 -->|"Intermediate Result"| Process3
+    
+    Process3 -->|"Control Commands<br/>(4 x PWM)"| Output1
+    Process3 -->|"Telemetry"| Output2
+    
+    Store1 -.->|"Historical Data"| Process2
+    
+    %% Styling
+    classDef source fill:#F5A623,stroke:#333,stroke-width:2px,color:#fff
+    classDef process fill:#4A90E2,stroke:#333,stroke-width:2px,color:#fff
+    classDef store fill:#9013FE,stroke:#333,stroke-width:2px,color:#fff
+    classDef output fill:#7ED321,stroke:#333,stroke-width:2px,color:#fff
+    
+    class Source1,Source2 source
+    class Process1,Process2,Process3 process
+    class Store1 store
+    class Output1,Output2 output
+
+%% Tips:
+%% - Use cylinders [()] for data sources/stores
+%% - Use parallelograms [//] for inputs/outputs
+%% - Label edges with data types, rates, sizes
+%% - Use solid lines for primary flow, dashed for optional/feedback
+%% - Include units (Hz, bytes, dimensions) on labels

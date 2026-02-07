@@ -1,0 +1,236 @@
+%% D4.2 - Phase 2 Detailed Gantt Chart (SITL Baseline + RL Control)
+%% UAV Flight Controller with On-Board Reinforcement Learning
+%% Priority 3 - Detailed Timeline
+%% Placement: 02_WBS_Phase2_SITL_Baseline.md (Section 2.6)
+
+gantt
+    title Phase 2: SITL Baseline + RL Control (Weeks 1-15)
+    dateFormat YYYY-MM-DD
+    axisFormat %b %d
+    
+    section Infrastructure (Task 2.1)
+    Install Gazebo 11            :done, t2_1_1, 2026-02-09, 1d
+    Install ROS 2 Humble         :done, t2_1_2, after t2_1_1, 2d
+    Install PX4-SITL toolkit     :active, t2_1_3, after t2_1_2, 2d
+    Configure workspace          :t2_1_4, after t2_1_3, 1d
+    Verify installation          :milestone, m2_1, after t2_1_4, 0d
+    
+    section Simulation Setup (Task 2.2)
+    Create quadrotor URDF        :t2_2_1, after m2_1, 3d
+    Configure Gazebo world       :t2_2_2, after t2_2_1, 2d
+    Add sensor plugins           :t2_2_3, after t2_2_2, 3d
+    IMU plugin (ICM-20948)       :t2_2_3a, after t2_2_2, 1d
+    Barometer plugin (BMP388)    :t2_2_3b, after t2_2_3a, 1d
+    GPS plugin (UBlox M8N)       :t2_2_3c, after t2_2_3b, 1d
+    Magnetometer plugin          :t2_2_3d, after t2_2_3c, 1d
+    Configure physics engine     :t2_2_4, after t2_2_3, 2d
+    Motor dynamics model         :t2_2_4a, after t2_2_3, 1d
+    Aerodynamics model           :t2_2_4b, after t2_2_4a, 1d
+    Test basic flight            :milestone, m2_2, after t2_2_4, 0d
+    
+    section ROS Integration (Task 2.3)
+    Create ROS 2 packages        :t2_3_1, after m2_2, 2d
+    uav_control package          :t2_3_1a, after m2_2, 1d
+    uav_sensors package          :t2_3_1b, after t2_3_1a, 1d
+    Define message types         :t2_3_2, after t2_3_1, 2d
+    ActuatorControl.msg          :t2_3_2a, after t2_3_1, 1d
+    SensorData.msg               :t2_3_2b, after t2_3_2a, 1d
+    UAVState.msg                 :t2_3_2c, after t2_3_2b, 1d
+    Setup Gazebo-ROS bridge      :t2_3_3, after t2_3_2, 3d
+    Subscribe to sensor topics   :t2_3_3a, after t2_3_2, 2d
+    Publish actuator commands    :t2_3_3b, after t2_3_3a, 1d
+    Create launch files          :t2_3_4, after t2_3_3, 1d
+    Test ROS communication       :milestone, m2_3, after t2_3_4, 0d
+    
+    section PID Controller (Task 2.4)
+    Design control architecture  :t2_4_1, after m2_3, 2d
+    Cascaded control loops       :t2_4_1a, after m2_3, 1d
+    Define control modes         :t2_4_1b, after t2_4_1a, 1d
+    Implement altitude PID       :t2_4_2, after t2_4_1, 3d
+    Altitude controller          :t2_4_2a, after t2_4_1, 2d
+    Vertical velocity damping    :t2_4_2b, after t2_4_2a, 1d
+    Implement attitude PID       :t2_4_3, after t2_4_2, 4d
+    Roll controller              :t2_4_3a, after t2_4_2, 1d
+    Pitch controller             :t2_4_3b, after t2_4_3a, 1d
+    Yaw controller               :t2_4_3c, after t2_4_3b, 1d
+    Rate controllers (p,q,r)     :t2_4_3d, after t2_4_3c, 1d
+    Tune PID gains               :t2_4_4, after t2_4_3, 5d
+    Manual tuning (Ziegler-Nichols) :t2_4_4a, after t2_4_3, 2d
+    Automated tuning (grid search) :t2_4_4b, after t2_4_4a, 3d
+    Test hover stability         :milestone, m2_4, after t2_4_4, 0d
+    
+    section Validation (Task 2.5)
+    Create test scenarios        :t2_5_1, after m2_4, 2d
+    Hover test (10s)             :t2_5_1a, after m2_4, 1d
+    Waypoint navigation          :t2_5_1b, after t2_5_1a, 1d
+    Disturbance rejection        :t2_5_1c, after t2_5_1b, 1d
+    Run flight tests             :t2_5_2, after t2_5_1, 3d
+    Collect performance data     :t2_5_3, after t2_5_2, 2d
+    Position error (RMS)         :t2_5_3a, after t2_5_2, 1d
+    Attitude error (RMS)         :t2_5_3b, after t2_5_3a, 1d
+    Control effort metrics       :t2_5_3c, after t2_5_3b, 1d
+    Generate baseline report     :t2_5_4, after t2_5_3, 2d
+    Phase 2 Complete             :milestone, m2_5, after t2_5_4, 0d
+    
+    section RL Environment (Task 3.1)
+    Design gym environment       :t3_1_1, after m2_5, 3d
+    State space definition       :t3_1_1a, after m2_5, 1d
+    Action space definition      :t3_1_1b, after t3_1_1a, 1d
+    Reward function design       :t3_1_1c, after t3_1_1b, 1d
+    Implement UAVEnv class       :t3_1_2, after t3_1_1, 4d
+    reset() method               :t3_1_2a, after t3_1_1, 1d
+    step() method                :t3_1_2b, after t3_1_2a, 2d
+    render() method              :t3_1_2c, after t3_1_2b, 1d
+    Add safety constraints       :t3_1_3, after t3_1_2, 2d
+    Altitude limits (0-100m)     :t3_1_3a, after t3_1_2, 1d
+    Attitude limits (±45°)       :t3_1_3b, after t3_1_3a, 1d
+    Episode termination logic    :t3_1_3c, after t3_1_3b, 1d
+    Test environment             :milestone, m3_1, after t3_1_3, 0d
+    
+    section RL Training (Task 3.2)
+    Select RL algorithm          :t3_2_1, after m3_1, 2d
+    Evaluate PPO vs SAC vs TD3   :t3_2_1a, after m3_1, 1d
+    Choose PPO (stability)       :t3_2_1b, after t3_2_1a, 1d
+    Configure Stable-Baselines3  :t3_2_2, after t3_2_1, 2d
+    Install dependencies         :t3_2_2a, after t3_2_1, 1d
+    Setup training pipeline      :t3_2_2b, after t3_2_2a, 1d
+    Define hyperparameters       :t3_2_3, after t3_2_2, 3d
+    Learning rate (3e-4)         :t3_2_3a, after t3_2_2, 1d
+    Batch size (64)              :t3_2_3b, after t3_2_3a, 1d
+    Clip range (0.2)             :t3_2_3c, after t3_2_3b, 1d
+    GAE lambda (0.95)            :t3_2_3d, after t3_2_3c, 1d
+    Run training (1M steps)      :t3_2_4, after t3_2_3, 10d
+    Monitor convergence          :t3_2_4a, after t3_2_3, 10d
+    Save checkpoints             :t3_2_4b, after t3_2_3, 10d
+    Training Complete            :milestone, m3_2, after t3_2_4, 0d
+    
+    section Policy Evaluation (Task 3.3)
+    Evaluate trained policy      :t3_3_1, after m3_2, 3d
+    Run 100 evaluation episodes  :t3_3_1a, after m3_2, 2d
+    Compute success rate         :t3_3_1b, after t3_3_1a, 1d
+    Compare vs PID baseline      :t3_3_2, after t3_3_1, 2d
+    Position tracking error      :t3_3_2a, after t3_3_1, 1d
+    Control smoothness           :t3_3_2b, after t3_3_2a, 1d
+    Visualize policy behavior    :t3_3_3, after t3_3_2, 2d
+    Plot trajectories            :t3_3_3a, after t3_3_2, 1d
+    Analyze state-action mapping :t3_3_3b, after t3_3_3a, 1d
+    Generate evaluation report   :t3_3_4, after t3_3_3, 2d
+    Phase 3 Complete             :milestone, m3_3, after t3_3_4, 0d
+    
+    section Model Compression (Task 3.4)
+    Analyze NN architecture      :t3_4_1, after m3_3, 2d
+    Count parameters (~20k)      :t3_4_1a, after m3_3, 1d
+    Estimate memory footprint    :t3_4_1b, after t3_4_1a, 1d
+    Apply quantization           :t3_4_2, after t3_4_1, 3d
+    Dynamic range quantization   :t3_4_2a, after t3_4_1, 2d
+    INT8 quantization            :t3_4_2b, after t3_4_2a, 1d
+    Test quantized model         :t3_4_3, after t3_4_2, 2d
+    Verify accuracy retention    :t3_4_3a, after t3_4_2, 1d
+    Measure inference latency    :t3_4_3b, after t3_4_3a, 1d
+    Export to TFLite             :t3_4_4, after t3_4_3, 1d
+    Phase 2+3 Complete           :milestone, m3_4, after t3_4_4, 0d
+
+%% Phase 2+3 Summary:
+%% 
+%% Phase 2: SITL Baseline (Weeks 1-6, ~240 hours)
+%%   Task 2.1: Infrastructure Setup (1 week, 40h)
+%%     - Install Gazebo, ROS 2, PX4-SITL
+%%     - Configure development workspace
+%%     - Verify installation
+%% 
+%%   Task 2.2: Simulation Environment (1.5 weeks, 60h)
+%%     - Create quadrotor URDF model
+%%     - Configure Gazebo world
+%%     - Add sensor plugins (IMU, Baro, GPS, Mag)
+%%     - Configure physics engine (motor dynamics, aerodynamics)
+%%     - Test basic flight
+%% 
+%%   Task 2.3: ROS Integration (1 week, 40h)
+%%     - Create ROS 2 packages (uav_control, uav_sensors)
+%%     - Define custom message types
+%%     - Setup Gazebo-ROS bridge
+%%     - Create launch files
+%%     - Test ROS communication
+%% 
+%%   Task 2.4: PID Controller (2 weeks, 80h)
+%%     - Design cascaded control architecture
+%%     - Implement altitude PID
+%%     - Implement attitude PID (roll, pitch, yaw, rates)
+%%     - Tune PID gains (manual + automated)
+%%     - Test hover stability
+%% 
+%%   Task 2.5: Validation (1.5 weeks, 60h)
+%%     - Create test scenarios (hover, waypoint, disturbance)
+%%     - Run flight tests
+%%     - Collect performance data (position/attitude error, control effort)
+%%     - Generate baseline report
+%% 
+%% Phase 3: RL Control (Weeks 7-15, ~360 hours)
+%%   Task 3.1: RL Environment Design (1.5 weeks, 60h)
+%%     - Design OpenAI Gym environment
+%%     - Define state space (15 dims: position, velocity, attitude, angular rates)
+%%     - Define action space (4 dims: motor thrusts)
+%%     - Design reward function (distance + attitude + control effort)
+%%     - Implement UAVEnv class with safety constraints
+%% 
+%%   Task 3.2: RL Training (3 weeks, 120h)
+%%     - Select RL algorithm (PPO)
+%%     - Configure Stable-Baselines3
+%%     - Define hyperparameters (lr=3e-4, batch=64, clip=0.2, GAE=0.95)
+%%     - Run training for 1M timesteps (~10 days)
+%%     - Monitor convergence and save checkpoints
+%% 
+%%   Task 3.3: Policy Evaluation (1.5 weeks, 60h)
+%%     - Run 100 evaluation episodes
+%%     - Compute success rate
+%%     - Compare vs PID baseline (position error, control smoothness)
+%%     - Visualize policy behavior (trajectories, state-action mapping)
+%%     - Generate evaluation report
+%% 
+%%   Task 3.4: Model Compression (1.5 weeks, 60h)
+%%     - Analyze NN architecture (~20k parameters)
+%%     - Apply quantization (dynamic range → INT8)
+%%     - Test quantized model (accuracy, latency)
+%%     - Export to TensorFlow Lite (.tflite)
+%% 
+%% Critical Path:
+%%   Task 2.1 → 2.2 → 2.3 → 2.4 → 2.5 → 3.1 → 3.2 → 3.3 → 3.4
+%%   (All tasks sequential, total 15 weeks)
+%% 
+%% Parallel Opportunities:
+%%   - Task 2.2 sensors (2.2.3a-d) can be partially parallelized
+%%   - Task 2.4.3 attitude controllers can be developed concurrently
+%%   - Task 3.2.4a-b (monitoring + checkpointing) run during training
+%% 
+%% Key Milestones:
+%%   M2.1: Installation verified (Day 6)
+%%   M2.2: Basic flight working (Day 20)
+%%   M2.3: ROS communication tested (Day 27)
+%%   M2.4: Hover stability achieved (Day 42)
+%%   M2.5: Phase 2 complete (Day 52)
+%%   M3.1: RL environment ready (Day 63)
+%%   M3.2: RL training complete (Day 83)
+%%   M3.3: Policy evaluated (Day 90)
+%%   M3.4: Model compressed & exported (Day 95)
+%% 
+%% Deliverables:
+%%   - Functional SITL simulation environment
+%%   - Baseline PID controller with tuned gains
+%%   - Baseline performance report
+%%   - Trained RL policy (PPO)
+%%   - Compressed TFLite model (<100KB)
+%%   - RL evaluation report (comparison vs PID)
+%%   - Training logs and checkpoints
+%% 
+%% Risk Mitigation:
+%%   - Early testing at each milestone
+%%   - Baseline PID controller provides fallback
+%%   - Checkpointing prevents training loss
+%%   - Quantization validation ensures accuracy preservation
+%% 
+%% Resource Requirements:
+%%   - Development PC: Ubuntu 22.04, 16GB RAM, GPU (RTX 3060+)
+%%   - Software: Gazebo 11, ROS 2 Humble, Python 3.10+
+%%   - RL frameworks: Stable-Baselines3, PyTorch
+%%   - Training time: ~10 days continuous for 1M steps
+%%   - Personnel: 1 engineer (full-time for 15 weeks)

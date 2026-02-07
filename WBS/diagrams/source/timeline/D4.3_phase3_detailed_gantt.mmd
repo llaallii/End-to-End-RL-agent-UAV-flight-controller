@@ -1,0 +1,282 @@
+%% D4.3 - Phase 3 Detailed Gantt Chart (HIL + Custom Hardware)
+%% UAV Flight Controller with On-Board Reinforcement Learning
+%% Priority 3 - Detailed Timeline
+%% Placement: 04_WBS_Phase4_HIL_Flight_Control.md (Section 4.6)
+
+gantt
+    title Phase 4 & 5: HIL Flight Control + Custom Hardware (Weeks 16-35)
+    dateFormat YYYY-MM-DD
+    axisFormat %b %d
+    
+    section HIL Setup (Task 4.1)
+    Select dev board             :done, t4_1_1, 2026-05-18, 2d
+    Evaluate STM32F4 vs F7       :done, t4_1_1a, 2026-05-18, 1d
+    Choose STM32F746ZG           :done, t4_1_1b, after t4_1_1a, 1d
+    Procure hardware             :active, t4_1_2, after t4_1_1, 5d
+    Dev board + debugger         :t4_1_2a, after t4_1_1, 2d
+    Power supply + cables        :t4_1_2b, after t4_1_2a, 1d
+    Sensor modules (breakout)    :t4_1_2c, after t4_1_2b, 2d
+    Setup toolchain              :t4_1_3, after t4_1_2, 3d
+    Install STM32CubeIDE         :t4_1_3a, after t4_1_2, 1d
+    Install OpenOCD debugger     :t4_1_3b, after t4_1_3a, 1d
+    Configure build system       :t4_1_3c, after t4_1_3b, 1d
+    Test basic firmware          :milestone, m4_1, after t4_1_3, 0d
+    
+    section HIL Bridge (Task 4.2)
+    Design HIL protocol          :t4_2_1, after m4_1, 3d
+    Define message format        :t4_2_1a, after m4_1, 1d
+    Binary protocol spec         :t4_2_1b, after t4_2_1a, 1d
+    CRC-16 checksum              :t4_2_1c, after t4_2_1b, 1d
+    Implement PC-side bridge     :t4_2_2, after t4_2_1, 4d
+    Create ROS 2 HIL node        :t4_2_2a, after t4_2_1, 2d
+    Serial communication (USB)   :t4_2_2b, after t4_2_2a, 1d
+    Sync with Gazebo             :t4_2_2c, after t4_2_2b, 1d
+    Implement MCU-side bridge    :t4_2_3, after t4_2_2, 4d
+    UART HAL driver              :t4_2_3a, after t4_2_2, 2d
+    Packet parser                :t4_2_3b, after t4_2_3a, 1d
+    Actuator output              :t4_2_3c, after t4_2_3b, 1d
+    Test communication           :t4_2_4, after t4_2_3, 2d
+    Measure latency (<5ms)       :t4_2_4a, after t4_2_3, 1d
+    Stress test (100 Hz)         :t4_2_4b, after t4_2_4a, 1d
+    HIL Bridge Ready             :milestone, m4_2, after t4_2_4, 0d
+    
+    section Firmware Dev (Task 4.3)
+    Setup FreeRTOS               :t4_3_1, after m4_2, 3d
+    Configure RTOS kernel        :t4_3_1a, after m4_2, 1d
+    Create task structure        :t4_3_1b, after t4_3_1a, 1d
+    Setup inter-task comm        :t4_3_1c, after t4_3_1b, 1d
+    Implement HAL layer          :t4_3_2, after t4_3_1, 5d
+    SPI driver (IMU)             :t4_3_2a, after t4_3_1, 2d
+    I2C driver (Baro/Mag)        :t4_3_2b, after t4_3_2a, 2d
+    UART driver (GPS/Telem)      :t4_3_2c, after t4_3_2b, 1d
+    Implement sensor drivers     :t4_3_3, after t4_3_2, 6d
+    IMU driver (ICM-20948)       :t4_3_3a, after t4_3_2, 2d
+    Barometer (BMP388)           :t4_3_3b, after t4_3_3a, 2d
+    GPS (UBlox M8N)              :t4_3_3c, after t4_3_3b, 1d
+    Magnetometer (QMC5883L)      :t4_3_3d, after t4_3_3c, 1d
+    Implement state estimator    :t4_3_4, after t4_3_3, 5d
+    Complementary filter         :t4_3_4a, after t4_3_3, 3d
+    Kalman filter (optional)     :t4_3_4b, after t4_3_4a, 2d
+    Firmware Build 1             :milestone, m4_3, after t4_3_4, 0d
+    
+    section RL Integration (Task 4.4)
+    Port NN inference code       :t4_4_1, after m4_3, 4d
+    Implement forward pass       :t4_4_1a, after m4_3, 2d
+    Load weights from Flash      :t4_4_1b, after t4_4_1a, 1d
+    Test inference latency       :t4_4_1c, after t4_4_1b, 1d
+    Integrate RL policy          :t4_4_2, after t4_4_1, 3d
+    Create RL control task       :t4_4_2a, after t4_4_1, 1d
+    State preprocessing          :t4_4_2b, after t4_4_2a, 1d
+    Action postprocessing        :t4_4_2c, after t4_4_2b, 1d
+    Add PID fallback             :t4_4_3, after t4_4_2, 2d
+    Implement mode switching     :t4_4_3a, after t4_4_2, 1d
+    Failsafe logic               :t4_4_3b, after t4_4_3a, 1d
+    Test RL+PID hybrid           :milestone, m4_4, after t4_4_3, 0d
+    
+    section HIL Testing (Task 4.5)
+    Setup HIL test rig           :t4_5_1, after m4_4, 2d
+    Connect PC↔MCU               :t4_5_1a, after m4_4, 1d
+    Power & debug setup          :t4_5_1b, after t4_5_1a, 1d
+    Run HIL flight tests         :t4_5_2, after t4_5_1, 5d
+    Hover test (HIL)             :t4_5_2a, after t4_5_1, 1d
+    Waypoint navigation (HIL)    :t4_5_2b, after t4_5_2a, 2d
+    Disturbance rejection (HIL)  :t4_5_2c, after t4_5_2b, 1d
+    Emergency shutdown (HIL)     :t4_5_2d, after t4_5_2c, 1d
+    Validate performance         :t4_5_3, after t4_5_2, 3d
+    Compare SITL vs HIL          :t4_5_3a, after t4_5_2, 1d
+    Measure control loop (100Hz) :t4_5_3b, after t4_5_3a, 1d
+    Verify real-time constraints :t4_5_3c, after t4_5_3b, 1d
+    Generate HIL report          :t4_5_4, after t4_5_3, 2d
+    Phase 4 Complete             :milestone, m4_5, after t4_5_4, 0d
+    
+    section PCB Design (Task 5.1)
+    Define requirements          :t5_1_1, after m4_5, 2d
+    Component selection          :t5_1_1a, after m4_5, 1d
+    Interface specifications     :t5_1_1b, after t5_1_1a, 1d
+    Create schematic             :t5_1_2, after t5_1_1, 8d
+    Power supply (3S-4S LiPo)    :t5_1_2a, after t5_1_1, 2d
+    MCU section (STM32F7)        :t5_1_2b, after t5_1_2a, 2d
+    Sensor interfaces            :t5_1_2c, after t5_1_2b, 2d
+    Motor outputs (4x ESC)       :t5_1_2d, after t5_1_2c, 1d
+    Communication (USB/UART)     :t5_1_2e, after t5_1_2d, 1d
+    Design PCB layout            :t5_1_3, after t5_1_2, 10d
+    4-layer stackup              :t5_1_3a, after t5_1_2, 2d
+    Component placement          :t5_1_3b, after t5_1_3a, 3d
+    Routing (signal/power)       :t5_1_3c, after t5_1_3b, 4d
+    DRC & design review          :t5_1_3d, after t5_1_3c, 1d
+    Generate Gerber files        :t5_1_4, after t5_1_3, 1d
+    PCB Design Complete          :milestone, m5_1, after t5_1_4, 0d
+    
+    section PCB Fabrication (Task 5.2)
+    Select PCB manufacturer      :t5_2_1, after m5_1, 1d
+    Evaluate JLCPCB vs PCBWay    :t5_2_1a, after m5_1, 1d
+    Submit fabrication order     :t5_2_2, after t5_2_1, 1d
+    Upload Gerbers + BOM         :t5_2_2a, after t5_2_1, 1d
+    PCB manufacturing            :t5_2_3, after t5_2_2, 10d
+    Wait for fab (7-10 days)     :t5_2_3a, after t5_2_2, 10d
+    Receive PCBs                 :milestone, m5_2, after t5_2_3, 0d
+    
+    section Component Sourcing (Task 5.3)
+    Create BOM (60-80 parts)     :t5_3_1, after m5_1, 2d
+    Source components            :t5_3_2, after t5_3_1, 3d
+    DigiKey/Mouser order         :t5_3_2a, after t5_3_1, 1d
+    AliExpress (sensors)         :t5_3_2b, after t5_3_2a, 1d
+    Local suppliers              :t5_3_2c, after t5_3_2b, 1d
+    Wait for delivery            :t5_3_3, after t5_3_2, 7d
+    Components arrive            :milestone, m5_3, after t5_3_3, 0d
+    
+    section Assembly (Task 5.4)
+    Prepare assembly             :t5_4_1, after m5_2, 1d
+    Organize components          :t5_4_1a, after m5_2, 1d
+    Solder paste stencil         :t5_4_2, after t5_4_1, 5d
+    Apply solder paste           :t5_4_2a, after t5_4_1, 1d
+    Place SMD components         :t5_4_2b, after t5_4_2a, 2d
+    Reflow soldering             :t5_4_2c, after t5_4_2b, 1d
+    Hand-solder THT parts        :t5_4_2d, after t5_4_2c, 1d
+    Visual inspection            :t5_4_3, after t5_4_2, 1d
+    Cleanup & touch-up           :t5_4_4, after t5_4_3, 1d
+    Assembly Complete            :milestone, m5_4, after t5_4_4, 0d
+    
+    section Hardware Testing (Task 5.5)
+    Power-on test                :t5_5_1, after m5_4, 1d
+    Check voltages (3.3V/5V)     :t5_5_1a, after m5_4, 1d
+    Test MCU programming         :t5_5_2, after t5_5_1, 1d
+    Upload blink firmware        :t5_5_2a, after t5_5_1, 1d
+    Test peripherals             :t5_5_3, after t5_5_2, 3d
+    SPI communication (IMU)      :t5_5_3a, after t5_5_2, 1d
+    I2C communication (Baro/Mag) :t5_5_3b, after t5_5_3a, 1d
+    UART (GPS/Telemetry)         :t5_5_3c, after t5_5_3b, 1d
+    Test motor outputs           :t5_5_4, after t5_5_3, 2d
+    PWM signal generation        :t5_5_4a, after t5_5_3, 1d
+    ESC connection (no props)    :t5_5_4b, after t5_5_4a, 1d
+    Full system test             :t5_5_5, after t5_5_4, 2d
+    Load flight firmware         :t5_5_5a, after t5_5_4, 1d
+    Bench test (no flight)       :t5_5_5b, after t5_5_5a, 1d
+    Generate hardware report     :t5_5_6, after t5_5_5, 2d
+    Phase 5 Complete             :milestone, m5_5, after t5_5_6, 0d
+
+%% Phase 4+5 Summary:
+%% 
+%% Phase 4: HIL Flight Control (Weeks 16-25, ~400 hours)
+%%   Task 4.1: HIL Setup (1.5 weeks, 60h)
+%%     - Select development board (STM32F746ZG)
+%%     - Procure hardware (dev board, debugger, power supply, sensor modules)
+%%     - Setup toolchain (STM32CubeIDE, OpenOCD)
+%%     - Test basic firmware
+%% 
+%%   Task 4.2: HIL Bridge Development (2 weeks, 80h)
+%%     - Design HIL protocol (binary format, CRC-16)
+%%     - Implement PC-side bridge (ROS 2 HIL node, serial comm, Gazebo sync)
+%%     - Implement MCU-side bridge (UART driver, packet parser, actuator output)
+%%     - Test communication (latency <5ms, stress test at 100 Hz)
+%% 
+%%   Task 4.3: Firmware Development (3 weeks, 120h)
+%%     - Setup FreeRTOS (kernel config, task structure, inter-task comm)
+%%     - Implement HAL layer (SPI, I2C, UART drivers)
+%%     - Implement sensor drivers (IMU, Baro, GPS, Mag)
+%%     - Implement state estimator (complementary filter, optional Kalman)
+%% 
+%%   Task 4.4: RL Integration (1.5 weeks, 60h)
+%%     - Port NN inference code (forward pass, load weights, test latency)
+%%     - Integrate RL policy (control task, preprocessing, postprocessing)
+%%     - Add PID fallback (mode switching, failsafe logic)
+%%     - Test RL+PID hybrid
+%% 
+%%   Task 4.5: HIL Testing (2 weeks, 80h)
+%%     - Setup HIL test rig (PC↔MCU connection, power, debug)
+%%     - Run HIL flight tests (hover, waypoint, disturbance, emergency)
+%%     - Validate performance (SITL vs HIL, 100 Hz loop, real-time constraints)
+%%     - Generate HIL report
+%% 
+%% Phase 5: Custom Hardware (Weeks 26-35, ~400 hours)
+%%   Task 5.1: PCB Design (3 weeks, 120h)
+%%     - Define requirements (component selection, interface specs)
+%%     - Create schematic (power, MCU, sensors, motors, communication)
+%%     - Design PCB layout (4-layer, placement, routing, DRC)
+%%     - Generate Gerber files
+%% 
+%%   Task 5.2: PCB Fabrication (2 weeks, 40h - mostly waiting)
+%%     - Select PCB manufacturer (JLCPCB vs PCBWay)
+%%     - Submit fabrication order (Gerbers + BOM)
+%%     - Wait for manufacturing (7-10 days)
+%%     - Receive PCBs
+%% 
+%%   Task 5.3: Component Sourcing (2 weeks, 40h - parallel with 5.2)
+%%     - Create BOM (60-80 components)
+%%     - Source components (DigiKey, Mouser, AliExpress)
+%%     - Wait for delivery (7 days)
+%% 
+%%   Task 5.4: Assembly (1.5 weeks, 60h)
+%%     - Prepare assembly (organize components)
+%%     - Solder PCB (paste stencil, SMD placement, reflow, hand-solder THT)
+%%     - Visual inspection
+%%     - Cleanup & touch-up
+%% 
+%%   Task 5.5: Hardware Testing (1.5 weeks, 60h)
+%%     - Power-on test (check voltages)
+%%     - Test MCU programming (upload blink firmware)
+%%     - Test peripherals (SPI, I2C, UART)
+%%     - Test motor outputs (PWM, ESC connection without props)
+%%     - Full system test (load flight firmware, bench test)
+%%     - Generate hardware report
+%% 
+%% Critical Path:
+%%   Task 4.1 → 4.2 → 4.3 → 4.4 → 4.5 → 5.1 → 5.2/5.3 → 5.4 → 5.5
+%%   (Total 20 weeks)
+%% 
+%% Parallel Opportunities:
+%%   - Task 4.3.2 (HAL drivers) can be partially parallelized
+%%   - Task 4.3.3 (sensor drivers) can be developed concurrently
+%%   - Task 5.2 (PCB fab) and 5.3 (component sourcing) run in parallel
+%%   - Task 5.1 can start early (during Phase 4) if resources available
+%% 
+%% Key Milestones:
+%%   M4.1: Basic firmware working (Week 17)
+%%   M4.2: HIL bridge ready (Week 19)
+%%   M4.3: Firmware build 1 complete (Week 23)
+%%   M4.4: RL+PID hybrid tested (Week 24)
+%%   M4.5: Phase 4 complete (Week 25)
+%%   M5.1: PCB design complete (Week 29)
+%%   M5.2: PCBs received (Week 31)
+%%   M5.3: Components arrived (Week 31)
+%%   M5.4: Assembly complete (Week 33)
+%%   M5.5: Phase 5 complete (Week 35)
+%% 
+%% Deliverables:
+%%   - Functional HIL simulation environment
+%%   - Custom flight controller firmware (FreeRTOS-based)
+%%   - RL inference engine integrated
+%%   - PID fallback controller
+%%   - HIL test results report
+%%   - Custom PCB design (Gerbers + schematic)
+%%   - Assembled flight controller board (Revision 1)
+%%   - Hardware test report
+%%   - Complete BOM and assembly instructions
+%% 
+%% Risk Mitigation:
+%%   - Early PCB design review (peer review at m5_1)
+%%   - Test with dev board before custom PCB
+%%   - Order extra PCBs (5-10 units) for rework
+%%   - Buffer time for debugging (not shown in Gantt)
+%%   - PID fallback ensures safe flight even if RL fails
+%%   - Parallel procurement reduces schedule risk
+%% 
+%% Resource Requirements:
+%%   - Development board: STM32F746ZG Nucleo-144 (~$25)
+%%   - Debugger: ST-Link V2 (~$20)
+%%   - Sensor modules: ICM-20948, BMP388, UBlox M8N (~$50)
+%%   - PCB fabrication: 4-layer, 50x50mm, 5-10 units (~$150)
+%%   - Components: BOM cost ~$80-120 per board
+%%   - Tools: Soldering station, reflow oven/hot air, multimeter
+%%   - Software: STM32CubeIDE (free), KiCAD (free), OpenOCD (free)
+%%   - Personnel: 1 engineer (full-time for 20 weeks)
+%% 
+%% Technical Specifications:
+%%   - MCU: STM32F746ZGT6 (216 MHz, 1MB Flash, 320KB RAM)
+%%   - Sensors: IMU (1 kHz), Baro (50 Hz), GPS (5-10 Hz), Mag (75 Hz)
+%%   - Motor control: 4x PWM/DShot outputs (50-2000 Hz)
+%%   - Communication: USB, UART (telemetry, GPS), SPI, I2C
+%%   - Power: 3S-4S LiPo input (11.1-16.8V), 5V BEC, 3.3V LDO
+%%   - PCB: 4-layer, 50x50mm, FR-4, 1.6mm thickness
+%%   - Control loop: 100 Hz (10ms period)
+%%   - NN inference: <5ms latency (target <3ms)

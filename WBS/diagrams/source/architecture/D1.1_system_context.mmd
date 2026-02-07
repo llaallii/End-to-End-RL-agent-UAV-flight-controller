@@ -1,0 +1,130 @@
+%% D1.1 - Overall System Context Diagram
+%% UAV Flight Controller with On-Board Reinforcement Learning
+%% Priority 1 - Foundation Diagram
+%% Placement: 00_WBS_Master_Overview.md (Section 1)
+
+graph TB
+    %% External Actors
+    Operator[("👤 Operator")]
+    Environment[("🌍 Physical Environment")]
+    
+    %% System Boundary
+    subgraph SystemBoundary["🚁 UAV Flight Controller System"]
+        
+        %% Stage 1: SITL
+        subgraph SITL["Stage 1: Software-in-the-Loop (SITL)"]
+            Gazebo["Gazebo Simulator"]
+            UAVModel["UAV Dynamics Model"]
+            SensorSim["Sensor Simulation"]
+            PID["Baseline PID Controller"]
+        end
+        
+        %% Stage 2: RL
+        subgraph RL["Stage 2: Reinforcement Learning"]
+            RLFramework["RL Training Framework<br/>(Stable-Baselines3)"]
+            TrainEnv["Training Environment<br/>(Gym Wrapper)"]
+            NeuralNet["Neural Network Policy"]
+            PolicyCompression["Policy Compression"]
+        end
+        
+        %% Stage 3: HIL
+        subgraph HIL["Stage 3: Hardware-in-the-Loop (HIL)"]
+            MCUDev["MCU Dev Board<br/>(STM32/ARM)"]
+            Firmware["Real-Time Firmware<br/>(RTOS)"]
+            HILInterface["HIL Bridge Interface"]
+            RLInference["Embedded RL Inference"]
+        end
+        
+        %% Stage 4: Hardware
+        subgraph Hardware["Stage 4: Custom Hardware"]
+            FlightController["Custom Flight Controller PCB"]
+            PowerSystem["Power Management"]
+            SensorHardware["Physical Sensors<br/>(IMU, etc.)"]
+            MotorDrivers["Motor Drivers"]
+        end
+        
+        %% Supporting Infrastructure
+        subgraph Infrastructure["Project Infrastructure"]
+            Requirements["Requirements Database"]
+            VersionControl["Git Repository + CI/CD"]
+            Documentation["Documentation System"]
+        end
+    end
+    
+    %% External Systems
+    Cloud[("☁️ Cloud GPU<br/>(Training)")]
+    
+    %% Connections - External to System
+    Operator -->|"Commands & Configuration"| SITL
+    Operator -->|"Training Parameters"| RL
+    Operator -->|"Monitoring"| HIL
+    
+    Environment -.->|"Simulated Physics"| Gazebo
+    
+    Cloud -.->|"Compute Resources"| RLFramework
+    
+    %% Connections - Stage Progression
+    SITL ==>|"Validated Simulation"| RL
+    RL ==>|"Trained Policy"| HIL
+    HIL ==>|"Validated Firmware"| Hardware
+    
+    %% Connections - Within Stages
+    Gazebo <--> UAVModel
+    UAVModel --> SensorSim
+    SensorSim --> PID
+    PID --> UAVModel
+    
+    RLFramework --> TrainEnv
+    TrainEnv <--> Gazebo
+    RLFramework --> NeuralNet
+    NeuralNet --> PolicyCompression
+    
+    HILInterface <--> Gazebo
+    HILInterface <--> MCUDev
+    Firmware --> RLInference
+    RLInference <--> HILInterface
+    
+    FlightController --> PowerSystem
+    FlightController --> SensorHardware
+    FlightController --> MotorDrivers
+    MotorDrivers -->|"Motor Commands"| Environment
+    
+    %% Infrastructure Support (dashed lines)
+    Infrastructure -.->|"Supports All Stages"| SITL
+    Infrastructure -.->|"Supports All Stages"| RL
+    Infrastructure -.->|"Supports All Stages"| HIL
+    Infrastructure -.->|"Supports All Stages"| Hardware
+    
+    %% System Outputs
+    Hardware -->|"Flight Control"| Environment
+    SITL -->|"Telemetry & Logs"| Operator
+    RL -->|"Training Metrics"| Operator
+    HIL -->|"Validation Results"| Operator
+    Hardware -->|"Real-Time Telemetry"| Operator
+    
+    %% Styling
+    classDef software fill:#4A90E2,stroke:#333,stroke-width:2px,color:#fff
+    classDef hardware fill:#7ED321,stroke:#333,stroke-width:2px,color:#000
+    classDef rl fill:#9013FE,stroke:#333,stroke-width:2px,color:#fff
+    classDef external fill:#9B9B9B,stroke:#333,stroke-width:2px,color:#fff
+    classDef infrastructure fill:#F5A623,stroke:#333,stroke-width:2px,color:#000
+    
+    class Gazebo,UAVModel,SensorSim,TrainEnv,Firmware,HILInterface software
+    class FlightController,PowerSystem,SensorHardware,MotorDrivers,MCUDev hardware
+    class RLFramework,NeuralNet,PolicyCompression,RLInference,PID rl
+    class Operator,Environment,Cloud external
+    class Requirements,VersionControl,Documentation infrastructure
+
+%% Diagram Notes:
+%% - Shows complete system from external actors through all 4 stages
+%% - Solid arrows: primary data/control flow
+%% - Dashed arrows: support/optional connections
+%% - Thick arrows (==>) : stage progression/major transitions
+%% - Color coding: Blue=Software, Green=Hardware, Purple=RL/AI, Gray=External, Orange=Infrastructure
+%% 
+%% Key Insights:
+%% 1. Simulation-first approach: Start SITL, progress to hardware
+%% 2. RL integrates with validated SITL simulation
+%% 3. HIL bridges software and hardware worlds
+%% 4. Infrastructure supports all stages
+%% 5. Operator interacts at every stage for monitoring/control

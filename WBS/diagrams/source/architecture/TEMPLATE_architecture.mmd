@@ -1,0 +1,54 @@
+%% System Architecture Template
+%% Use this template for creating system architecture diagrams
+%% Replace [placeholders] with actual content
+
+graph TD
+    %% Define subgraphs for major subsystems
+    subgraph External["External Environment"]
+        E1[Operator/User]
+        E2[External System 1]
+        E3[External System 2]
+    end
+    
+    subgraph SystemBoundary["System Name"]
+        subgraph Subsystem1["Subsystem 1"]
+            C1[Component 1.1]
+            C2[Component 1.2]
+        end
+        
+        subgraph Subsystem2["Subsystem 2"]
+            C3[Component 2.1]
+            C4[Component 2.2]
+        end
+        
+        subgraph Subsystem3["Subsystem 3"]
+            C5[Component 3.1]
+            C6[Component 3.2]
+        end
+    end
+    
+    %% Define connections
+    E1 -->|User Input| C1
+    E2 -->|External Data| C3
+    C1 --> C2
+    C2 --> C3
+    C3 --> C4
+    C4 --> C5
+    C5 --> C6
+    C6 -->|Output| E3
+    
+    %% Styling (optional)
+    classDef software fill:#4A90E2,stroke:#333,stroke-width:2px,color:#fff
+    classDef hardware fill:#7ED321,stroke:#333,stroke-width:2px,color:#fff
+    classDef external fill:#9B9B9B,stroke:#333,stroke-width:2px,color:#fff
+    
+    class C1,C2,C3,C4 software
+    class C5,C6 hardware
+    class E1,E2,E3 external
+
+%% Tips:
+%% - Use descriptive names for subsystems and components
+%% - Group related components in subgraphs
+%% - Label edges with data types or protocols
+%% - Apply consistent styling using classes
+%% - Keep diagram readable: max 10-15 nodes per level

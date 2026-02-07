@@ -1,0 +1,195 @@
+%% D5.1 - Software Component Architecture (SITL)
+%% UAV Flight Controller with On-Board Reinforcement Learning
+%% Priority 2 - Software Architecture
+%% Placement: 02_WBS_Phase2_SITL_Baseline.md (Section 2.2)
+
+graph TB
+    %% Simulation Layer
+    subgraph SimLayer["Simulation Layer (Gazebo)"]
+        GazWorld[Gazebo World<br/>Physics simulation]
+        GazPlugin[Custom Gazebo Plugin<br/>UAV model interface]
+        GazViz[Visualization<br/>3D rendering]
+    end
+    
+    %% UAV Dynamics
+    subgraph Dynamics["UAV Dynamics Model"]
+        RigidBody[6-DOF Rigid Body<br/>Dynamics<br/>Mass, Inertia]
+        Aero[Aerodynamic Model<br/>Drag forces]
+        Motor[Motor Dynamics<br/>Thrust & torque]
+        PropMix[Propeller Mixer<br/>4 motors to forces]
+    end
+    
+    %% Sensor Simulation
+    subgraph Sensors["Sensor Simulation"]
+        IMUSim[IMU Simulator<br/>Accel + Gyro + Mag]
+        GPSSim[GPS Simulator<br/>Position + velocity]
+        BaroSim[Barometer Simulator<br/>Altitude]
+        SensorNoise[Sensor Noise Model<br/>Gaussian + bias]
+    end
+    
+    %% ROS Middleware
+    subgraph ROSMiddleware["ROS 2 Middleware"]
+        ROSBridge[ROS-Gazebo Bridge]
+        TopicIMU["/imu/data<br/>(sensor_msgs)"]
+        TopicGPS["/gps/fix<br/>(sensor_msgs)"]
+        TopicState["/uav/state<br/>(nav_msgs)"]
+        TopicCmd["/uav/command<br/>(std_msgs)"]
+        TopicMotor["/motor_cmd<br/>(custom_msgs)"]
+    end
+    
+    %% State Estimator
+    subgraph StateEst["State Estimator"]
+        EKF[Extended Kalman Filter<br/>12-state estimator]
+        EstState[Estimated State<br/>Position, velocity,<br/>attitude, rates]
+        CompFilter[Complementary Filter<br/>(backup estimator)]
+    end
+    
+    %% Control Stack
+    subgraph ControlStack["Control Stack"]
+        PIDOuter[Outer Loop PID<br/>Position controller]
+        PIDInner[Inner Loop PID<br/>Attitude & rate<br/>controller]
+        CtrlAlloc[Control Allocation<br/>Mix to 4 motors]
+        Saturation[Saturation &<br/>Anti-windup]
+    end
+    
+    %% RL Policy (Phase 3)
+    subgraph RLPolicy["RL Policy Module (Phase 3)"]
+        RLInfer[RL Inference Engine<br/>TensorFlow Lite<br/>or PyTorch]
+        PolicyNN[Neural Network<br/>15 → 128 → 128 → 4]
+        RLState[RL State Processor<br/>Normalization]
+    end
+    
+    %% Data Logging
+    subgraph Logging["Data Logging & Analysis"]
+        ROSBag[ROS Bag Recording<br/>All topics]
+        CSVLog[CSV Data Logger<br/>Custom format]
+        RViz[RViz Visualization<br/>Real-time plotting]
+        PlotTool[Python Analysis<br/>Matplotlib plots]
+    end
+    
+    %% Ground Control Station (Optional)
+    subgraph GCS["Ground Control Station (Optional)"]
+        MAVLink[MAVLink Interface]
+        QGC[QGroundControl<br/>or custom UI]
+    end
+    
+    %% Data Flow - Simulation
+    GazWorld --> GazPlugin
+    GazPlugin --> Dynamics
+    
+    RigidBody --> Aero
+    Aero --> Motor
+    Motor --> PropMix
+    PropMix --> RigidBody
+    
+    %% Data Flow - Sensors
+    GazPlugin --> IMUSim
+    GazPlugin --> GPSSim
+    GazPlugin --> BaroSim
+    
+    SensorNoise --> IMUSim
+    SensorNoise --> GPSSim
+    SensorNoise --> BaroSim
+    
+    %% Data Flow - ROS
+    IMUSim --> ROSBridge
+    GPSSim --> ROSBridge
+    BaroSim --> ROSBridge
+    
+    ROSBridge --> TopicIMU
+    ROSBridge --> TopicGPS
+    ROSBridge --> TopicState
+    
+    %% Data Flow - State Estimation
+    TopicIMU --> EKF
+    TopicGPS --> EKF
+    TopicState --> EKF
+    EKF --> EstState
+    CompFilter -.->|"Backup"| EstState
+    
+    %% Data Flow - Control (PID Baseline)
+    EstState --> PIDOuter
+    PIDOuter --> PIDInner
+    PIDInner --> CtrlAlloc
+    CtrlAlloc --> Saturation
+    Saturation --> TopicMotor
+    
+    %% Data Flow - Control (RL Alternative)
+    EstState -.->|"Phase 3"| RLState
+    RLState -.->|"Phase 3"| RLInfer
+    RLInfer -.->|"Phase 3"| PolicyNN
+    PolicyNN -.->|"Phase 3"| TopicMotor
+    
+    %% Data Flow - Back to Simulation
+    TopicMotor --> ROSBridge
+    ROSBridge --> PropMix
+    
+    %% Data Flow - Logging
+    TopicIMU --> ROSBag
+    TopicGPS --> ROSBag
+    TopicState --> ROSBag
+    TopicMotor --> ROSBag
+    
+    EstState --> CSVLog
+    TopicState --> RViz
+    ROSBag --> PlotTool
+    
+    %% Data Flow - GCS (Optional)
+    TopicState --> MAVLink
+    TopicMotor --> MAVLink
+    MAVLink --> QGC
+    QGC --> MAVLink
+    MAVLink --> TopicCmd
+    TopicCmd --> PIDOuter
+    
+    %% Styling
+    classDef simulation fill:#F5A623,stroke:#333,stroke-width:2px,color:#000
+    classDef dynamics fill:#4A90E2,stroke:#333,stroke-width:2px,color:#fff
+    classDef sensors fill:#7ED321,stroke:#333,stroke-width:2px,color:#000
+    classDef middleware fill:#50E3C2,stroke:#333,stroke-width:2px,color:#000
+    classDef estimation fill:#4A90E2,stroke:#333,stroke-width:2px,color:#fff
+    classDef control fill:#9013FE,stroke:#333,stroke-width:2px,color:#fff
+    classDef rl fill:#BD10E0,stroke:#333,stroke-width:2px,color:#fff
+    classDef logging fill:#B8E986,stroke:#333,stroke-width:2px,color:#000
+    classDef gcs fill:#AAAAAA,stroke:#333,stroke-width:2px,color:#000
+    
+    class GazWorld,GazPlugin,GazViz simulation
+    class RigidBody,Aero,Motor,PropMix dynamics
+    class IMUSim,GPSSim,BaroSim,SensorNoise sensors
+    class ROSBridge,TopicIMU,TopicGPS,TopicState,TopicCmd,TopicMotor middleware
+    class EKF,EstState,CompFilter estimation
+    class PIDOuter,PIDInner,CtrlAlloc,Saturation control
+    class RLInfer,PolicyNN,RLState rl
+    class ROSBag,CSVLog,RViz,PlotTool logging
+    class MAVLink,QGC gcs
+
+%% Software Component Architecture Summary:
+%% 
+%% Layer 1: Simulation (Gazebo)
+%%   - Physics simulation, UAV model plugin, visualization
+%% 
+%% Layer 2: UAV Dynamics & Sensors
+%%   - 6-DOF rigid body, motor dynamics, sensor simulation with noise
+%% 
+%% Layer 3: ROS Middleware
+%%   - ROS 2 topics for sensor data, state, and commands
+%%   - ROS-Gazebo bridge for communication
+%% 
+%% Layer 4: State Estimation
+%%   - EKF for sensor fusion (IMU + GPS)
+%%   - Complementary filter as backup
+%% 
+%% Layer 5: Control
+%%   - PID baseline: outer (position) + inner (attitude/rate) loops
+%%   - RL policy (Phase 3): neural network inference
+%% 
+%% Layer 6: Data Logging & Analysis
+%%   - ROS Bag recording, CSV logs, RViz, Python plotting
+%% 
+%% Layer 7: Ground Control Station (optional)
+%%   - MAVLink interface to QGroundControl
+%% 
+%% Key Interfaces:
+%%   - Gazebo ↔ ROS: sensor_msgs, nav_msgs
+%%   - ROS ↔ Control: custom_msgs for motor commands
+%%   - Control ↔ RL: state vector (15D) → action vector (4D)

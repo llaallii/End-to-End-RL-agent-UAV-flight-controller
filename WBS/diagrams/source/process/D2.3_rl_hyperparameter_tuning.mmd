@@ -1,0 +1,231 @@
+%% D2.3 - RL Hyperparameter Tuning Workflow
+%% UAV Flight Controller with On-Board Reinforcement Learning
+%% Priority 3 - Training Optimization
+%% Placement: 03_WBS_Phase3_RL_Control.md (Section 3.4)
+
+graph TB
+    %% Initial Setup
+    subgraph InitialSetup["Initial Setup"]
+        BaseConfig["Base Configuration<br/>Load default PPO params<br/>from literature"]
+        
+        SearchSpace["Define Search Space:<br/>• Learning rate: [1e-5, 1e-3]<br/>• Batch size: [32, 64, 128, 256]<br/>• Clip range: [0.1, 0.3]<br/>• GAE λ: [0.90, 0.99]<br/>• Discount γ: [0.95, 0.999]<br/>• Entropy coef: [0.0, 0.1]"]
+        
+        Budget["Computational Budget:<br/>• GPU hours available<br/>• Max trials (e.g., 50)<br/>• Time per trial (e.g., 2h)"]
+    end
+    
+    %% Tuning Strategy Selection
+    subgraph TuningStrategy["Tuning Strategy Selection"]
+        GridSearch["Grid Search<br/>Exhaustive search<br/>Guaranteed to find best<br/>❌ Expensive (O(n^k))"]
+        
+        RandomSearch["Random Search<br/>Sample randomly<br/>✅ Efficient baseline<br/>~10-20 trials"]
+        
+        Bayesian["Bayesian Optimization<br/>Learn from past trials<br/>✅ Sample-efficient<br/>Optuna or Ray Tune"]
+        
+        PopBased["Population-Based Training<br/>Evolve hyperparams<br/>✅ Adaptive tuning<br/>Complex setup"]
+        
+        StrategyChoice{{"Choose Strategy"}}
+        
+        StrategyChoice -->|"Small budget"| RandomSearch
+        StrategyChoice -->|"Medium budget"| Bayesian
+        StrategyChoice -->|"Large budget"| PopBased
+        StrategyChoice -.->|"Academic baseline"| GridSearch
+    end
+    
+    %% Training Loop
+    subgraph TrainingLoop["Training Loop (Per Trial)"]
+        SampleParams["Sample Hyperparameters<br/>From search space<br/>or optimizer suggestion"]
+        
+        InitEnv["Initialize Environment<br/>Gazebo SITL<br/>with sampled params"]
+        
+        TrainAgent["Train Agent<br/>PPO algorithm<br/>Fixed episode budget<br/>(e.g., 1M steps)"]
+        
+        EvaluatePerf["Evaluate Performance:<br/>• Mean episode reward<br/>• Success rate<br/>• Episode length<br/>• Convergence speed"]
+        
+        LogMetrics["Log Metrics<br/>TensorBoard + CSV<br/>Trial metadata"]
+    end
+    
+    %% Optimization Feedback
+    subgraph OptimizationFeedback["Optimization Feedback"]
+        UpdateOptimizer["Update Optimizer<br/>Bayesian: update surrogate model<br/>PBT: evolve population"]
+        
+        CheckConvergence{{"Convergence<br/>Check"}}
+        
+        EarlyStop["Early Stopping<br/>If trial performs poorly<br/>Save GPU hours"]
+        
+        BestSoFar["Track Best Config<br/>Highest mean reward<br/>Save checkpoint"]
+    end
+    
+    %% Analysis & Selection
+    subgraph AnalysisSelection["Analysis & Selection"]
+        CompareTrials["Compare All Trials<br/>Visualize performance<br/>Parallel coordinates plot"]
+        
+        Sensitivity["Sensitivity Analysis<br/>Which params matter most?<br/>ANOVA or PDP"]
+        
+        SelectBest["Select Best Configuration<br/>Highest validation reward<br/>or best trade-off"]
+        
+        ValidateBest["Validate Best Config<br/>Re-train 3 times<br/>Check reproducibility"]
+    end
+    
+    %% Fine-Tuning
+    subgraph FineTuning["Fine-Tuning (Optional)"]
+        LocalSearch["Local Search<br/>Around best config<br/>Refine further"]
+        
+        AblationStudy["Ablation Study<br/>Remove/change components<br/>Understand contribution"]
+        
+        EnsembleTest["Ensemble Testing<br/>Train multiple agents<br/>Average or vote"]
+    end
+    
+    %% Final Deployment
+    subgraph Deployment["Final Deployment"]
+        FinalTrain["Final Training<br/>Best config<br/>Full episode budget<br/>(e.g., 5M steps)"]
+        
+        SaveModel["Save Trained Model<br/>Weights + config<br/>TensorBoard logs"]
+        
+        Documentation["Document Results:<br/>• Best hyperparameters<br/>• Training curves<br/>• Performance metrics<br/>• Lessons learned"]
+    end
+    
+    %% Data Flow
+    BaseConfig --> SearchSpace
+    SearchSpace --> Budget
+    Budget --> TuningStrategy
+    
+    TuningStrategy --> SampleParams
+    
+    SampleParams --> InitEnv
+    InitEnv --> TrainAgent
+    TrainAgent --> EvaluatePerf
+    EvaluatePerf --> LogMetrics
+    
+    LogMetrics --> UpdateOptimizer
+    UpdateOptimizer --> CheckConvergence
+    
+    CheckConvergence -->|"Trial incomplete"| EarlyStop
+    EarlyStop -->|"Stop early"| UpdateOptimizer
+    EarlyStop -->|"Continue"| TrainAgent
+    
+    CheckConvergence -->|"Trial complete"| BestSoFar
+    BestSoFar --> UpdateOptimizer
+    
+    UpdateOptimizer -->|"Budget remaining"| SampleParams
+    UpdateOptimizer -->|"Budget exhausted"| CompareTrials
+    
+    CompareTrials --> Sensitivity
+    Sensitivity --> SelectBest
+    SelectBest --> ValidateBest
+    
+    ValidateBest -->|"Reproducible"| FineTuning
+    ValidateBest -->|"Not reproducible"| SampleParams
+    
+    FineTuning --> FinalTrain
+    FinalTrain --> SaveModel
+    SaveModel --> Documentation
+    
+    Documentation --> [*]
+    
+    %% Annotations
+    HyperparamNote[/"Common PPO Hyperparameters:<br/>• Learning rate (α): most critical, try [3e-4, 1e-4, 3e-5]<br/>• Batch size: larger = more stable, smaller = faster<br/>• Clip range (ε): too high = unstable, too low = slow<br/>• GAE λ: higher = more bias, lower = more variance<br/>• Discount γ: higher = long-term focus<br/>• Entropy coef: encourages exploration"/]
+    
+    SearchSpace -.-> HyperparamNote
+    
+    ToolsNote[/"Recommended Tools:<br/>• Optuna: Bayesian optimization, pruning<br/>• Ray Tune: Distributed tuning, PBT<br/>• Weights & Biases: Tracking, visualization<br/>• TensorBoard: Logging, plotting"/]
+    
+    TuningStrategy -.-> ToolsNote
+    
+    MetricsNote[/"Evaluation Metrics:<br/>• Primary: Mean episode reward (last 100 episodes)<br/>• Secondary: Success rate (reached goal)<br/>• Tertiary: Training time, convergence speed<br/>• Trade-off: Reward vs. robustness"/]
+    
+    EvaluatePerf -.-> MetricsNote
+    
+    %% Styling
+    classDef setup fill:#F5A623,stroke:#333,stroke-width:2px,color:#000
+    classDef strategy fill:#4A90E2,stroke:#333,stroke-width:2px,color:#fff
+    classDef training fill:#9013FE,stroke:#333,stroke-width:2px,color:#fff
+    classDef optimization fill:#7ED321,stroke:#333,stroke-width:2px,color:#000
+    classDef analysis fill:#50E3C2,stroke:#333,stroke-width:2px,color:#000
+    classDef finetune fill:#BD10E0,stroke:#333,stroke-width:2px,color:#fff
+    classDef deployment fill:#B8E986,stroke:#333,stroke-width:2px,color:#000
+    classDef annotation fill:#E0E0E0,stroke:#333,stroke-width:1px,color:#000
+    classDef decision fill:#D0021B,stroke:#333,stroke-width:2px,color:#fff
+    
+    class BaseConfig,SearchSpace,Budget setup
+    class GridSearch,RandomSearch,Bayesian,PopBased,StrategyChoice strategy
+    class SampleParams,InitEnv,TrainAgent,EvaluatePerf,LogMetrics training
+    class UpdateOptimizer,CheckConvergence,EarlyStop,BestSoFar optimization
+    class CompareTrials,Sensitivity,SelectBest,ValidateBest analysis
+    class LocalSearch,AblationStudy,EnsembleTest finetune
+    class FinalTrain,SaveModel,Documentation deployment
+    class HyperparamNote,ToolsNote,MetricsNote annotation
+
+%% RL Hyperparameter Tuning Workflow Summary:
+%% 
+%% Tuning Strategies:
+%%   1. Grid Search: Exhaustive, expensive, O(n^k) trials
+%%   2. Random Search: Simple baseline, 10-20 trials sufficient
+%%   3. Bayesian Optimization: Sample-efficient, learns from past trials (Optuna)
+%%   4. Population-Based Training: Adaptive, evolves hyperparameters during training
+%% 
+%% Key Hyperparameters (PPO):
+%%   - Learning rate (α): 1e-5 to 1e-3 (most critical!)
+%%   - Batch size: 32, 64, 128, 256
+%%   - Clip range (ε): 0.1 to 0.3
+%%   - GAE lambda (λ): 0.90 to 0.99
+%%   - Discount factor (γ): 0.95 to 0.999
+%%   - Entropy coefficient: 0.0 to 0.1
+%%   - Number of epochs: 5 to 20
+%%   - Rollout buffer size: 1024 to 4096 steps
+%% 
+%% Workflow:
+%%   1. Define search space (ranges for each hyperparam)
+%%   2. Choose tuning strategy (Random/Bayesian/PBT)
+%%   3. For each trial:
+%%      a. Sample hyperparameters
+%%      b. Train agent for fixed budget (e.g., 1M steps)
+%%      c. Evaluate performance (mean reward, success rate)
+%%      d. Log metrics (TensorBoard, CSV)
+%%      e. Update optimizer (if Bayesian/PBT)
+%%   4. Compare all trials (parallel coordinates plot)
+%%   5. Select best configuration (highest validation reward)
+%%   6. Validate best config (re-train 3 times, check reproducibility)
+%%   7. Fine-tune if needed (local search around best)
+%%   8. Final training with best config (full budget, 5M steps)
+%%   9. Save model and document results
+%% 
+%% Evaluation Metrics:
+%%   - Primary: Mean episode reward (last 100 episodes)
+%%   - Secondary: Success rate (% episodes reaching goal)
+%%   - Tertiary: Training time, convergence speed
+%%   - Trade-offs: Reward vs. robustness, speed vs. stability
+%% 
+%% Computational Budget:
+%%   - Typical: 50 trials × 2 hours = 100 GPU-hours
+%%   - Bayesian optimization: 20-30 trials sufficient
+%%   - Random search: 10-20 trials (baseline)
+%%   - Grid search: Avoid unless <5 hyperparams
+%% 
+%% Tools:
+%%   - Optuna: Bayesian optimization, pruning, visualization
+%%   - Ray Tune: Distributed tuning, PBT, scalable
+%%   - Weights & Biases (W&B): Experiment tracking, sweeps
+%%   - TensorBoard: Real-time logging, plotting
+%% 
+%% Best Practices:
+%%   - Start with literature defaults (e.g., Stable-Baselines3)
+%%   - Tune learning rate first (most impact)
+%%   - Use early stopping (save GPU hours)
+%%   - Validate best config 3+ times (check reproducibility)
+%%   - Document all trials (for future reference)
+%%   - Sensitivity analysis (understand which params matter)
+%% 
+%% Common Pitfalls:
+%%   - Over-tuning on training environment (generalization gap)
+%%   - Ignoring variance (single trial not reliable)
+%%   - Too small trial budget (<10 trials)
+%%   - Not logging intermediate checkpoints
+%%   - Tuning too many params at once (curse of dimensionality)
+%% 
+%% Expected Results (UAV task):
+%%   - Learning rate: 3e-4 or 1e-4 (typical sweet spot)
+%%   - Batch size: 64 or 128 (balance speed/stability)
+%%   - Clip range: 0.2 (PPO default, usually good)
+%%   - GAE λ: 0.95 or 0.98 (balance bias/variance)
+%%   - Discount γ: 0.99 (long-term planning important)
+%%   - Entropy: 0.01 or 0.001 (some exploration, not too much)

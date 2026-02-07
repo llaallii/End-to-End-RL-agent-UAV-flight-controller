@@ -1,0 +1,53 @@
+%% Sequence Diagram Template
+%% Use this template for interaction flows and communication protocols
+
+sequenceDiagram
+    participant User as Operator
+    participant System as Flight Controller
+    participant Sensor as IMU Sensor
+    participant Actuator as Motor Driver
+    
+    %% Initialization sequence
+    Note over System,Sensor: Initialization Phase
+    User->>System: Power On
+    activate System
+    System->>Sensor: Initialize Sensors
+    activate Sensor
+    Sensor-->>System: Calibration Data
+    deactivate Sensor
+    System->>Actuator: Initialize Motors
+    activate Actuator
+    Actuator-->>System: Ready Status
+    deactivate Actuator
+    System-->>User: System Ready
+    
+    %% Main operation loop
+    Note over System,Actuator: Normal Operation (repeating @ 100Hz)
+    loop Every 10ms Control Loop
+        Sensor->>System: IMU Data (accel, gyro)
+        System->>System: Process Control Algorithm
+        System->>Actuator: Motor Commands (PWM)
+        Actuator-->>System: Acknowledgment
+    end
+    
+    %% Error handling
+    Note over Sensor,System: Error Scenario
+    Sensor-xSystem: Communication Timeout
+    activate System
+    System->>Actuator: Emergency Stop
+    System-->>User: Error Alert
+    deactivate System
+    
+    %% Optional: timing constraints
+    Note right of System: Control loop must<br/>complete in <10ms
+
+%% Tips:
+%% - Use 'participant X as Y' for clear labels
+%% - Solid arrow (->>): synchronous call
+%% - Dashed arrow (-->>): response/return
+%% - X arrow (-x): lost/failed message
+%% - activate/deactivate: show processing time
+%% - loop: repeating sequences
+%% - alt/else: conditional branches
+%% - Note: add explanatory comments
+%% - Keep sequence focused on one scenario/use case

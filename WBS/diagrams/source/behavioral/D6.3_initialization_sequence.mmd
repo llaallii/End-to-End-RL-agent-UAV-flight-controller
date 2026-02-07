@@ -1,0 +1,202 @@
+%% D6.3 - Initialization Sequence Diagram
+%% UAV Flight Controller with On-Board Reinforcement Learning
+%% Priority 3 - Startup Process
+%% Placement: 04_WBS_Phase4_HIL_Flight_Control.md (Section 4.2)
+
+sequenceDiagram
+    participant Power as Power System
+    participant MCU as STM32 MCU
+    participant RTOS as FreeRTOS Kernel
+    participant HAL as Hardware Abstraction Layer
+    participant Sensors as Sensor Drivers
+    participant NN as RL Inference Engine
+    participant Control as Control Task
+    participant LED as Status LED
+    
+    Note over Power,LED: System Power-On
+    
+    Power->>MCU: 3.3V stable
+    activate MCU
+    MCU->>MCU: Reset Vector Execution
+    MCU->>MCU: Clock Configuration (216 MHz)
+    MCU->>MCU: Enable FPU & Cache
+    
+    Note over MCU: Hardware Initialization (HAL)
+    MCU->>HAL: HAL_Init()
+    activate HAL
+    HAL->>HAL: Configure System Clock
+    HAL->>HAL: Init SysTick Timer (1ms)
+    HAL->>HAL: Enable GPIO Clocks
+    HAL->>HAL: Configure NVIC Priorities
+    HAL-->>MCU: HAL Ready
+    deactivate HAL
+    
+    MCU->>LED: GPIO_WritePin(LED_RED, HIGH)
+    Note right of LED: Red LED = Boot in progress
+    
+    Note over MCU,RTOS: RTOS Initialization
+    MCU->>RTOS: osKernelInitialize()
+    activate RTOS
+    RTOS->>RTOS: Create Idle Task
+    RTOS->>RTOS: Create Timer Task
+    RTOS->>RTOS: Init Task Scheduler
+    RTOS-->>MCU: Kernel Ready
+    
+    Note over MCU,Sensors: Peripheral Initialization
+    MCU->>HAL: Init_SPI1() for IMU
+    HAL->>HAL: Configure SPI1 (18 MHz, Mode 0)
+    HAL-->>MCU: SPI1 Ready
+    
+    MCU->>HAL: Init_I2C1() for Baro/Mag
+    HAL->>HAL: Configure I2C1 (400 kHz)
+    HAL-->>MCU: I2C1 Ready
+    
+    MCU->>HAL: Init_UART4() for GPS
+    HAL->>HAL: Configure UART4 (115200 baud)
+    HAL-->>MCU: UART4 Ready
+    
+    MCU->>HAL: Init_TIM1() for Motors
+    HAL->>HAL: Configure TIM1 (400 Hz PWM)
+    HAL-->>MCU: TIM1 Ready
+    
+    Note over Sensors: Sensor Initialization & Calibration
+    MCU->>Sensors: Init_IMU()
+    activate Sensors
+    Sensors->>HAL: SPI_Read(WHO_AM_I)
+    HAL-->>Sensors: Device ID = 0x71
+    Sensors->>HAL: SPI_Write(CONFIG_REG, 0x01)
+    Sensors->>Sensors: Configure: ±8g, ±2000°/s, 1kHz
+    Sensors-->>MCU: IMU Ready
+    
+    MCU->>Sensors: Init_Barometer()
+    Sensors->>HAL: I2C_Read(PROM, 12 bytes)
+    HAL-->>Sensors: Calibration Coefficients
+    Sensors->>Sensors: Store calibration data
+    Sensors-->>MCU: Baro Ready
+    
+    MCU->>Sensors: Init_GPS()
+    Sensors->>HAL: UART_Write(UBX_CFG_RATE, 5Hz)
+    HAL-->>Sensors: GPS ACK
+    Sensors-->>MCU: GPS Ready
+    deactivate Sensors
+    
+    MCU->>LED: GPIO_WritePin(LED_YELLOW, HIGH)
+    Note right of LED: Yellow LED = Sensors initialized
+    
+    Note over Sensors: Sensor Calibration (5 seconds)
+    loop 5000ms calibration period
+        MCU->>Sensors: Read_IMU()
+        Sensors-->>MCU: Accel, Gyro data
+        MCU->>MCU: Accumulate bias samples
+        MCU->>LED: Toggle LED (heartbeat)
+    end
+    
+    MCU->>MCU: Compute bias: bias = mean(samples)
+    MCU->>MCU: Store bias in RAM
+    
+    Note over NN: Neural Network Initialization
+    MCU->>NN: NN_Init()
+    activate NN
+    NN->>NN: Allocate input buffer (15 floats)
+    NN->>NN: Allocate hidden buffers (128+128 floats)
+    NN->>NN: Allocate output buffer (4 floats)
+    NN->>NN: Load weights from Flash
+    
+    Note right of NN: Weights stored at 0x08080000<br/>~76 KB for FP32 or ~19 KB for INT8
+    
+    NN->>NN: Verify checksum (CRC32)
+    alt Checksum valid
+        NN-->>MCU: NN Ready
+    else Checksum invalid
+        NN-->>MCU: NN Failed (use PID fallback)
+        MCU->>LED: GPIO_WritePin(LED_RED, BLINK_FAST)
+    end
+    deactivate NN
+    
+    Note over RTOS,Control: Create Application Tasks
+    MCU->>RTOS: osThreadNew(SensorTask, ...)
+    RTOS->>RTOS: Create Task (Priority 4, 1KB stack)
+    
+    MCU->>RTOS: osThreadNew(ControlTask, ...)
+    RTOS->>RTOS: Create Task (Priority 5, 2KB stack)
+    
+    MCU->>RTOS: osThreadNew(TelemTask, ...)
+    RTOS->>RTOS: Create Task (Priority 2, 1KB stack)
+    
+    MCU->>RTOS: osThreadNew(SafetyTask, ...)
+    RTOS->>RTOS: Create Task (Priority 6, 512B stack)
+    
+    Note over RTOS,Control: Start RTOS Scheduler
+    MCU->>RTOS: osKernelStart()
+    RTOS->>RTOS: Scheduler running
+    deactivate RTOS
+    
+    Note over Control: Main Control Task Starts
+    RTOS->>Control: Task execution
+    activate Control
+    Control->>Control: Wait for sensor data (blocking)
+    
+    Note right of Control: Control loop begins<br/>100 Hz (10ms period)
+    
+    Control->>MCU: Set system state = PREFLIGHT
+    Control->>LED: GPIO_WritePin(LED_GREEN, ON)
+    Note right of LED: Green LED = System ready<br/>Waiting for arm command
+    
+    Control->>Control: Enable watchdog timer (50ms timeout)
+    Control->>Control: Zero motor outputs (safety)
+    
+    deactivate MCU
+    deactivate Control
+    
+    Note over Power,LED: Initialization Complete (Total: ~2 seconds)
+    
+    alt Normal Boot
+        LED->>LED: Solid Green = Ready
+    else Error Boot
+        LED->>LED: Red Blinking = Error (code in blink pattern)
+    end
+
+%% Initialization Sequence Summary:
+%% 
+%% Phase 1: Hardware Init (~50ms)
+%%   - MCU reset, clock config (216 MHz)
+%%   - HAL initialization
+%%   - Enable FPU, cache, peripherals
+%% 
+%% Phase 2: Peripheral Init (~100ms)
+%%   - SPI1 for IMU (18 MHz)
+%%   - I2C1 for Baro/Mag (400 kHz)
+%%   - UART4 for GPS (115200 baud)
+%%   - TIM1 for motor PWM (400 Hz)
+%% 
+%% Phase 3: Sensor Init & Calibration (~5 seconds)
+%%   - IMU: Read WHO_AM_I, configure registers
+%%   - Baro: Read calibration coefficients
+%%   - GPS: Configure update rate (5 Hz)
+%%   - Collect bias samples (5000ms @ 1kHz = 5000 samples)
+%%   - Compute and store bias
+%% 
+%% Phase 4: NN Init (~500ms)
+%%   - Allocate buffers (input, hidden, output)
+%%   - Load weights from Flash (76 KB @ ~150 KB/s)
+%%   - Verify checksum (CRC32)
+%%   - Fallback to PID if failed
+%% 
+%% Phase 5: RTOS Init (~50ms)
+%%   - Create tasks (Sensor, Control, Telemetry, Safety)
+%%   - Start scheduler
+%%   - Begin task execution
+%% 
+%% Total Boot Time: ~2 seconds (mostly sensor calibration)
+%% 
+%% LED Status Codes:
+%%   - Red: Boot in progress or error
+%%   - Yellow: Sensors initialized
+%%   - Green: System ready (PREFLIGHT state)
+%%   - Red blinking: Error (count blinks for error code)
+%% 
+%% Error Handling:
+%%   - Sensor initialization failure → retry 3 times → error state
+%%   - NN checksum failure → use PID fallback controller
+%%   - Calibration timeout → use default bias values
+%%   - Task creation failure → halt and blink error code

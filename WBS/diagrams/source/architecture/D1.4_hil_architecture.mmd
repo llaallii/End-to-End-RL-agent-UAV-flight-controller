@@ -1,0 +1,156 @@
+%% D1.4 - HIL System Architecture
+%% UAV Flight Controller with On-Board Reinforcement Learning
+%% Priority 2 - Technical Architecture
+%% Placement: 04_WBS_Phase4_HIL_Flight_Control.md (Top of document)
+
+graph TB
+    %% Development Workstation
+    subgraph DevPC["Development Workstation (Linux)"]
+        direction TB
+        
+        subgraph GazeboSim["Gazebo Simulation"]
+            Physics[Physics Engine<br/>UAV dynamics<br/>Sensor simulation]
+            WorldEnv[World Environment<br/>Same as SITL]
+        end
+        
+        subgraph HILPlugin["HIL Bridge Plugin"]
+            SerialInterface[Serial/USB Interface<br/>UART communication]
+            DataSerialization[Data Serialization<br/>Binary protocol<br/>CRC checksums]
+            Timing[Timing Synchronization<br/>100 Hz control loop]
+        end
+        
+        ROSViz[ROS Visualization<br/>RViz, Plotjuggler<br/>Monitoring]
+        
+        DataLog[Data Logging<br/>Flight logs<br/>Performance metrics]
+    end
+    
+    %% Physical Connection
+    USBCable[((USB/UART Cable<br/>115200+ baud))]
+    
+    %% MCU Development Board
+    subgraph MCUBoard["MCU Development Board"]
+        direction TB
+        
+        Debugger[Debug Interface<br/>SWD/JTAG<br/>ST-Link/J-Link]
+        
+        subgraph MCU["Microcontroller (STM32F4/F7 or similar)"]
+            direction TB
+            
+            subgraph RTOS["Real-Time Operating System (FreeRTOS)"]
+                TaskScheduler[Task Scheduler<br/>Preemptive multitasking]
+                
+                subgraph Tasks["RTOS Tasks"]
+                    SensorTask[Sensor Task<br/>Highest priority<br/>100+ Hz]
+                    ControlTask[Control Task<br/>High priority<br/>100 Hz]
+                    CommTask[Communication Task<br/>Medium priority<br/>100 Hz]
+                    SafetyTask[Safety Monitor Task<br/>High priority<br/>50 Hz]
+                    LogTask[Logging Task<br/>Low priority<br/>10 Hz]
+                end
+                
+                TaskComm[Inter-Task Comm<br/>Queues, Semaphores<br/>Mutexes]
+            end
+            
+            subgraph FirmwareModules["Firmware Modules"]
+                StateEst[State Estimator<br/>Sensor fusion<br/>EKF/Complementary]
+                
+                RLInference["RL Inference Engine<br/>TFLite Micro or<br/>Custom NN engine<br/><10ms execution"]
+                
+                Failsafe[Failsafe Logic<br/>Watchdog<br/>Error detection]
+                
+                HILComm[HIL Communication<br/>Parser/Serializer<br/>Buffer management]
+            end
+            
+            Peripherals[MCU Peripherals<br/>UART, Timers<br/>GPIO, ADC]
+        end
+        
+        LED[Status LEDs<br/>System indicators]
+        PowerReg[Power Regulation<br/>5V → 3.3V]
+    end
+    
+    %% Power Supply
+    Power[⚡ USB Power<br/>or External 5V]
+    
+    %% Optional: Physical Sensors (for later testing)
+    PhysicalSensors[📟 Physical Sensors<br/>(Optional)<br/>IMU, GPS, etc.]
+    
+    %% Data Flow - PC to MCU
+    Physics -->|True state<br/>Sensor measurements| HILPlugin
+    WorldEnv --> Physics
+    
+    HILPlugin --> SerialInterface
+    SerialInterface --> DataSerialization
+    DataSerialization --> Timing
+    
+    Timing <-->|Binary packets<br/>100 Hz| USBCable
+    
+    %% Data Flow - MCU side
+    USBCable <--> Peripherals
+    Peripherals <--> HILComm
+    
+    HILComm -->|Sensor data| TaskComm
+    TaskComm --> SensorTask
+    
+    SensorTask -->|Parsed measurements| StateEst
+    StateEst -->|Estimated state| ControlTask
+    
+    ControlTask --> RLInference
+    RLInference -->|RL policy output<br/>Motor commands| ControlTask
+    
+    ControlTask -->|Control commands| CommTask
+    CommTask --> HILComm
+    HILComm --> Peripherals
+    
+    Peripherals -->|Motor commands| USBCable
+    
+    %% Data Flow - Back to simulation
+    USBCable -->|Control commands| Timing
+    Timing --> DataSerialization
+    DataSerialization --> SerialInterface
+    SerialInterface -->|Actuator commands| Physics
+    
+    %% Safety and Monitoring
+    SafetyTask --> Failsafe
+    Failsafe -.->|Emergency stop| CommTask
+    Failsafe --> LED
+    
+    TaskScheduler -.->|Schedules| SensorTask
+    TaskScheduler -.->|Schedules| ControlTask
+    TaskScheduler -.->|Schedules| CommTask
+    TaskScheduler -.->|Schedules| SafetyTask
+    TaskScheduler -.->|Schedules| LogTask
+    
+    %% Visualization and Logging
+    Physics -.->|Telemetry| ROSViz
+    HILComm -.->|Firmware status| DataLog
+    
+    %% Debug and Power
+    Debugger -.->|Flash/Debug| MCU
+    Power --> PowerReg
+    PowerReg --> MCU
+    Power -.-> USBCable
+    
+    %% Optional physical sensors
+    PhysicalSensors -.->|I2C/SPI<br/>(future)| Peripherals
+    
+    %% Styling
+    classDef pc fill:#4A90E2,stroke:#333,stroke-width:2px,color:#fff
+    classDef hil fill:#F5A623,stroke:#333,stroke-width:2px,color:#000
+    classDef mcu fill:#7ED321,stroke:#333,stroke-width:2px,color:#000
+    classDef rtos fill:#9013FE,stroke:#333,stroke-width:2px,color:#fff
+    classDef firmware fill:#50E3C2,stroke:#333,stroke-width:2px,color:#000
+    classDef external fill:#9B9B9B,stroke:#333,stroke-width:2px,color:#fff
+    
+    class Physics,WorldEnv,ROSViz,DataLog pc
+    class SerialInterface,DataSerialization,Timing hil
+    class MCU,Debugger,LED,PowerReg,Peripherals mcu
+    class TaskScheduler,SensorTask,ControlTask,CommTask,SafetyTask,LogTask,TaskComm rtos
+    class StateEst,RLInference,Failsafe,HILComm firmware
+    class USBCable,Power,PhysicalSensors external
+
+%% HIL Architecture Notes:
+%% - Simulation (Gazebo) runs on PC, firmware on real MCU
+%% - HIL bridge serializes sensor data (PC → MCU) and control commands (MCU → PC)
+%% - RTOS manages real-time task scheduling with priorities
+%% - RL inference executes on MCU (<10ms requirement)
+%% - Safety monitor ensures deterministic real-time behavior
+%% - Same firmware used in HIL and final hardware

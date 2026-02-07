@@ -1,0 +1,407 @@
+# UAV Flight Controller with On-Board RL - .gitignore
+# Created: February 8, 2026
+
+# ============================================================================
+# Python
+# ============================================================================
+# Byte-compiled / optimized / DLL files
+__pycache__/
+*.py[cod]
+*$py.class
+
+# C extensions
+*.so
+
+# Distribution / packaging
+.Python
+build/
+develop-eggs/
+dist/
+downloads/
+eggs/
+.eggs/
+lib/
+lib64/
+parts/
+sdist/
+var/
+wheels/
+pip-wheel-metadata/
+share/python-wheels/
+*.egg-info/
+.installed.cfg
+*.egg
+MANIFEST
+
+# PyInstaller
+*.manifest
+*.spec
+
+# Unit test / coverage reports
+htmlcov/
+.tox/
+.nox/
+.coverage
+.coverage.*
+.cache
+nosetests.xml
+coverage.xml
+*.cover
+*.py,cover
+.hypothesis/
+.pytest_cache/
+
+# Jupyter Notebook
+.ipynb_checkpoints
+*.ipynb_checkpoints/
+
+# IPython
+profile_default/
+ipython_config.py
+
+# pyenv
+.python-version
+
+# pipenv
+Pipfile.lock
+
+# PEP 582
+__pypackages__/
+
+# Celery
+celerybeat-schedule
+celerybeat.pid
+
+# SageMath parsed files
+*.sage.py
+
+# Environments
+.env
+.venv
+env/
+venv/
+ENV/
+env.bak/
+venv.bak/
+
+# Spyder project settings
+.spyderproject
+.spyproject
+
+# Rope project settings
+.ropeproject
+
+# mkdocs documentation
+/site
+
+# mypy
+.mypy_cache/
+.dmypy.json
+dmypy.json
+
+# Pyre type checker
+.pyre/
+
+# ============================================================================
+# Conda Environment
+# ============================================================================
+.conda/
+*.conda
+
+# ============================================================================
+# ROS 2 / Gazebo / SITL
+# ============================================================================
+# Build artifacts
+build/
+devel/
+install/
+log/
+logs/
+
+# ROS bagfiles
+*.bag
+*.db3
+
+# Gazebo logs
+.gazebo/
+gazebo_logs/
+
+# ROS parameter dumps
+*.yaml.bak
+
+# ============================================================================
+# Reinforcement Learning
+# ============================================================================
+# Model checkpoints
+checkpoints/
+*.pth
+*.pt
+*.ckpt
+*.pkl
+*.pickle
+
+# TensorBoard logs
+runs/
+tb_logs/
+tensorboard_logs/
+
+# Stable-Baselines3 logs
+sb3_logs/
+
+# Training logs
+training_logs/
+eval_logs/
+
+# Weights & Biases
+wandb/
+
+# Ray Tune
+ray_results/
+
+# ============================================================================
+# Firmware / Embedded
+# ============================================================================
+# STM32 / ARM builds
+*.o
+*.d
+*.elf
+*.bin
+*.hex
+*.map
+*.lst
+*.axf
+*.out
+
+# STM32CubeIDE
+.metadata/
+.settings/
+Debug/
+Release/
+
+# IAR Embedded Workbench
+*.ewt
+*.eww
+*.ewd
+
+# Keil MDK-ARM
+*.uvopt
+*.uvoptx
+*.uvgui.*
+
+# ============================================================================
+# PCB Design
+# ============================================================================
+# KiCad backup files
+*-bak
+*.bak
+*.bck
+*-cache.lib
+*.dcm
+*.net
+fp-info-cache
+*.kicad_pcb-bak
+*.sch-bak
+
+# Eagle backup files
+*.s#*
+*.b#*
+
+# Gerber files (keep in version control, but can be regenerated)
+# Uncomment if you don't want to commit Gerbers
+# *.gbr
+# *.gbl
+# *.gtl
+# *.gbs
+# *.gts
+# *.gbo
+# *.gto
+# *.drl
+
+# ============================================================================
+# Documentation / Diagrams
+# ============================================================================
+# Temporary rendering files
+*.tmp
+*.temp
+.mmdc/
+
+# Backup files
+*~
+*.swp
+*.swo
+
+# ============================================================================
+# Data / Logs
+# ============================================================================
+# Flight logs
+flight_logs/
+*.log
+*.tlog
+*.ulog
+
+# Telemetry data
+telemetry_data/
+*.csv
+*.dat
+
+# Video recordings
+*.mp4
+*.avi
+*.mov
+
+# Large datasets (uncomment if you have large data files)
+# data/
+# datasets/
+
+# ============================================================================
+# IDE / Editor
+# ============================================================================
+# Visual Studio Code
+.vscode/
+*.code-workspace
+.history/
+
+# PyCharm
+.idea/
+*.iml
+*.ipr
+*.iws
+
+# Sublime Text
+*.sublime-project
+*.sublime-workspace
+
+# Vim
+*.swp
+*.swo
+*~
+
+# Emacs
+\#*\#
+.\#*
+
+# ============================================================================
+# Operating System
+# ============================================================================
+# Windows
+Thumbs.db
+Thumbs.db:encryptable
+ehthumbs.db
+ehthumbs_vista.db
+*.stackdump
+[Dd]esktop.ini
+$RECYCLE.BIN/
+*.cab
+*.msi
+*.msix
+*.msm
+*.msp
+*.lnk
+
+# macOS
+.DS_Store
+.AppleDouble
+.LSOverride
+._*
+.DocumentRevisions-V100
+.fseventsd
+.Spotlight-V100
+.TemporaryItems
+.Trashes
+.VolumeIcon.icns
+.com.apple.timemachine.donotpresent
+.AppleDB
+.AppleDesktop
+Network Trash Folder
+Temporary Items
+.apdisk
+
+# Linux
+*~
+.directory
+.Trash-*
+.nfs*
+
+# ============================================================================
+# Version Control
+# ============================================================================
+*.orig
+*.rej
+.hg/
+.svn/
+
+# ============================================================================
+# Compiled Documentation
+# ============================================================================
+*.pdf.bak
+_build/
+_static/
+_templates/
+
+# Doxygen
+html/
+latex/
+
+# ============================================================================
+# Temporary / Cache
+# ============================================================================
+*.cache
+cache/
+tmp/
+temp/
+
+# ============================================================================
+# Project-Specific
+# ============================================================================
+# Exclude large binary files
+*.weights
+*.tflite.large
+
+# Exclude sensitive configuration
+secrets.yaml
+credentials.json
+*.key
+*.pem
+
+# Exclude simulation recordings (if too large)
+# sim_recordings/
+
+# Exclude compiled URDF/SDF models
+*.sdf.bak
+*.urdf.bak
+
+# Exclude HIL test results (if too large)
+# hil_results/
+
+# ============================================================================
+# Node.js (for Mermaid CLI rendering)
+# ============================================================================
+node_modules/
+npm-debug.log*
+yarn-debug.log*
+yarn-error.log*
+package-lock.json
+yarn.lock
+
+# ============================================================================
+# Keep Important Files
+# ============================================================================
+# Force-include certain files even if they match patterns above
+!.gitkeep
+!.gitignore
+!README.md
+!LICENSE
+
+# Keep rendered diagrams (comment out if you want to regenerate on pull)
+!WBS/diagrams/rendered/**/*.png
+!WBS/diagrams/rendered/**/*.svg
+
+# Keep source diagrams
+!WBS/diagrams/source/**/*.mmd
+
+# Keep documentation
+!WBS/**/*.md
+!docs/**/*.md
+
+# Keep templates
+!WBS/diagrams/source/**/*TEMPLATE*.mmd
