@@ -220,6 +220,9 @@ fp-info-cache
 # ============================================================================
 # Documentation / Diagrams
 # ============================================================================
+# Mermaid source files (regenerate from version-controlled sources if needed)
+*.mmd
+
 # Temporary rendering files
 *.tmp
 *.temp
@@ -393,15 +396,9 @@ yarn.lock
 !LICENSE
 
 # Keep rendered diagrams (comment out if you want to regenerate on pull)
-!WBS/diagrams/rendered/**/*.png
-!WBS/diagrams/rendered/**/*.svg
-
-# Keep source diagrams
-!WBS/diagrams/source/**/*.mmd
+!diagrams/rendered/**/*.png
+!diagrams/rendered/**/*.svg
 
 # Keep documentation
 !WBS/**/*.md
 !docs/**/*.md
-
-# Keep templates
-!WBS/diagrams/source/**/*TEMPLATE*.mmd

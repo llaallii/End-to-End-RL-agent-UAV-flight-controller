@@ -32,11 +32,23 @@
 
 Phase 2 (Stage 1) establishes the software-in-the-loop simulation foundation for the entire project. This phase develops a high-fidelity UAV dynamics model within Gazebo simulation environment, implements realistic sensor models, and creates a classical PID-based flight controller as baseline. The SITL system runs entirely on development workstation without any embedded hardware. Success provides validated simulation environment, proven UAV dynamics, and baseline controller performance metrics for RL comparison.
 
+#### Figure 2.1: SITL System Architecture
+
+![SITL Architecture](diagrams/rendered/architecture/D1.3_sitl_architecture.png)
+
+*Figure 2.1 shows the complete SITL architecture with Gazebo simulation, UAV dynamics model, sensor simulation, ROS communication layers, and PID baseline controller integration.*
+
 ### Total Duration and Effort
 
 - **Duration**: 8-10 weeks
 - **Total Effort**: 280 person-hours
 - **Work Packages**: 24 Level 3 deliverables across 6 Level 2 subsystems
+
+#### Figure 2.2: SITL Data Flow Architecture
+
+![SITL Dataflow](diagrams/rendered/dataflow/D3.1_sitl_dataflow.png)
+
+*Figure 2.2 illustrates the complete data flow in the SITL system from physics simulation through sensors, state estimation, flight controller, to motor commands.*
 
 ### Key Deliverables
 
@@ -77,6 +89,12 @@ Phase 2 (Stage 1) establishes the software-in-the-loop simulation foundation for
 | PID tuning difficulty | Medium | Medium | Systematic methods, accept "good enough" |
 | Model complexity | High | High | Start simple, add incrementally |
 | Parameter uncertainty | High | Medium | Sensitivity analysis, literature values |
+
+#### Figure 2.3: Phase 2 Detailed Timeline (Gantt)
+
+![Phase 2 Gantt](diagrams/rendered/timeline/D4.2_phase2_gantt.png)
+
+*Figure 2.3 provides the detailed 8-10 week timeline for Phase 2 with all work packages, dependencies, and resource loading.*
 
 ---
 
@@ -258,6 +276,12 @@ Phase 2 (Stage 1) establishes the software-in-the-loop simulation foundation for
 **Libraries**: Eigen (linear algebra), NumPy, Matplotlib, ROS packages (tf, sensor_msgs, geometry_msgs)
 
 **Build Tools**: CMake, Colcon (ROS2) or Catkin (ROS1)
+
+#### Figure 2.4: SITL Software Architecture
+
+![SITL Software Architecture](diagrams/rendered/components/D5.1_sitl_software_architecture.png)
+
+*Figure 2.4 shows the detailed software component architecture for the SITL system including ROS nodes, Gazebo plugins, message interfaces, and control flow.*
 
 ---
 

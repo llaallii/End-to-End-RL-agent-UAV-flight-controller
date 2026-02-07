@@ -32,6 +32,12 @@
 
 Phase 1 establishes the foundational project infrastructure required to support all subsequent technical work. This infrastructure-focused phase creates the systems, processes, and tools that enable effective requirements management, version control, continuous integration, documentation, and project governance. Completing this phase ensures the project team operates from a common technical foundation with established workflows, automated quality gates, and formal decision processes.
 
+#### Figure 1.1: Project Methodology Workflow
+
+![Project Methodology Workflow](diagrams/rendered/process/D2.1_methodology_workflow.png)
+
+*Figure 1.1 shows the complete simulation-first methodology that Phase 1 infrastructure supports, progressing from SITL through RL training, HIL validation, to custom hardware integration.*
+
 ### Total Duration and Effort
 
 - **Duration**: 2 weeks
@@ -288,6 +294,24 @@ Use IEEE 29148 or similar standard as a guide for requirements documentation. Pr
 
 **Description**:
 Create a requirements traceability matrix that establishes bidirectional traceability links between system requirements, design elements, implementation components, and verification activities. The RTM ensures complete requirement coverage and enables impact analysis when requirements change. Traceability includes upward links (derived requirements to parent requirements), downward links (requirements to design and implementation), and horizontal links (requirements to verification test cases). The RTM is implemented within the requirements management tool with automated reporting capabilities.
+
+#### Figure 1.3: Requirements Traceability Matrix
+
+![Requirements Traceability Matrix](../diagrams/rendered/traceability/D7.1_requirements_traceability_matrix.png)
+
+*Figure 1.3 shows the complete requirements traceability matrix linking system requirements through functional requirements, design specifications, WBS tasks, to test cases with bidirectional verification.*
+
+#### Figure 1.4: Requirements Flow-Down Hierarchy
+
+![Requirements Flow-Down](../diagrams/rendered/traceability/D7.2_requirements_flowdown.png)
+
+*Figure 1.4 illustrates the hierarchical decomposition of requirements from mission statement through system requirements, subsystem requirements, down to component-level specifications.*
+
+#### Figure 1.5: Verification & Validation Matrix
+
+![Verification Matrix](../diagrams/rendered/traceability/D7.3_verification_matrix.png)
+
+*Figure 1.5 maps requirements to verification methods (Analysis, Test, Inspection, Demonstration) and shows verification results for all project phases.*
 
 **Deliverables**:
 - Requirements Traceability Matrix in database format

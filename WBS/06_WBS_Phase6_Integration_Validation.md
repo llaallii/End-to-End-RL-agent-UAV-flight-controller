@@ -32,6 +32,24 @@
 
 Phase 6 conducts final system integration and validation across all project stages. This phase executes end-to-end testing from SITL through HIL to custom hardware, completes all project documentation, and prepares knowledge transfer materials. Success demonstrates complete integrated system functionality and provides comprehensive project deliverables.
 
+#### Figure 6.1: Complete System Integration Architecture
+
+![Integration Architecture](diagrams/rendered/architecture/D1.6_integration_architecture.png)
+
+*Figure 6.1 illustrates the complete integrated system combining SITL baseline, RL-trained policy, HIL firmware validation, and custom hardware flight controller.*
+
+#### Figure 6.2: Comprehensive Testing & Validation Workflow
+
+![Testing & Validation Workflow](diagrams/rendered/process/D2.4_testing_validation_workflow.png)
+
+*Figure 6.2 details the 8-phase testing strategy from unit tests through acceptance testing, with progressive flight testing levels spanning 24 weeks and 960 hours.*
+
+#### Figure 6.3: Safety & Fault Management System
+
+![Safety Architecture](diagrams/rendered/architecture/D1.7_safety_fault_management.png)
+
+*Figure 6.3 shows the comprehensive 5-layer safety architecture with envelope protection, fault detection, emergency response, and <1ms critical response time.*
+
 ### Total Duration and Effort
 
 - **Duration**: 3-4 weeks

@@ -32,6 +32,12 @@
 
 Phase 4 (Stage 3) integrates the trained RL policy with embedded hardware through hardware-in-the-loop simulation. This phase selects and procures MCU, develops firmware architecture with RTOS, ports RL inference to embedded platform, creates HIL interface between Gazebo and firmware, validates real-time performance, and implements safety and fault handling. Success produces validated embedded flight control firmware ready for custom hardware integration.
 
+#### Figure 4.1: HIL System Architecture
+
+![HIL Architecture](diagrams/rendered/architecture/D1.4_hil_architecture.png)
+
+*Figure 4.1 shows the complete HIL architecture with Gazebo simulation connected to STM32 MCU firmware via UART/USB interface, including sensor data flow and control commands.*
+
 ### Total Duration and Effort
 
 - **Duration**: 6-8 weeks
@@ -70,6 +76,18 @@ Phase 4 (Stage 3) integrates the trained RL policy with embedded hardware throug
 ✅ Real-time constraints met (deterministic timing, low jitter)
 ✅ Safety systems functional (watchdog, failsafe)
 ✅ All Stage 3→4 gate criteria satisfied
+
+#### Figure 4.2: HIL Communication Protocol
+
+![HIL Communication](diagrams/rendered/dataflow/D3.2_hil_communication.png)
+
+*Figure 4.2 illustrates the bidirectional communication protocol between Gazebo and MCU firmware with message formats, timing, and error handling.*
+
+#### Figure 4.3: MAVLink Message Flow
+
+![MAVLink Message Flow](diagrams/rendered/dataflow/D3.4_mavlink_message_flow.png)
+
+*Figure 4.3 details the MAVLink messaging protocol used for telemetry, commands, and status updates between flight controller and ground control station.*
 
 ### Risk Summary
 
@@ -117,12 +135,30 @@ Phase 4 (Stage 3) integrates the trained RL policy with embedded hardware throug
 
 **Description**: Design firmware architecture including RTOS selection, module structure, control loop design, and memory management.
 
+#### Figure 4.4: Firmware Architecture
+
+![Firmware Architecture](diagrams/rendered/components/D5.2_firmware_architecture.png)
+
+*Figure 4.4 shows the layered firmware architecture with RTOS, drivers, sensor interfaces, RL inference engine, and motor control modules.*
+
 | WBS ID | Work Package | Duration | Effort | Key Deliverables | Critical Success Factors |
 |--------|--------------|----------|--------|------------------|-------------------------|
 | 4.2.1 | RTOS Selection | 2 days | 8h | Selected RTOS, justification | FreeRTOS recommended; lightweight, well-documented, MCU support |
 | 4.2.2 | Firmware Module Design | 3 days | 16h | Module architecture, interfaces | Sensor, control, communication, safety modules defined |
 | 4.2.3 | Control Loop Architecture | 3 days | 12h | Control loop design, timing diagram | ≥100Hz control rate, deterministic execution |
 | 4.2.4 | Memory Management Strategy | 2 days | 12h | Memory layout, allocation strategy | Static allocation for real-time, heap minimized |
+
+#### Figure 4.5: Sensor Interface Architecture
+
+![Sensor Interface](diagrams/rendered/components/D5.3_sensor_interface_diagram.png)
+
+*Figure 4.5 details the sensor interface layer with I2C/SPI drivers, IMU data acquisition, filtering, and state estimation integration.*
+
+#### Figure 4.6: Motor Control Architecture
+
+![Motor Control](diagrams/rendered/components/D5.4_motor_control_architecture.png)
+
+*Figure 4.6 illustrates the motor control subsystem with PWM generation, ESC interface, and thrust command processing.*
 
 ---
 
@@ -169,12 +205,36 @@ Phase 4 (Stage 3) integrates the trained RL policy with embedded hardware throug
 
 **Description**: Implement safety systems including watchdog, failsafe conditions, error detection, and recovery procedures.
 
+#### Figure 4.7: Flight Controller State Machine
+
+![Flight Controller FSM](diagrams/rendered/behavioral/D6.1_flight_controller_state_machine.png)
+
+*Figure 4.7 shows the main flight controller state machine with states for initialization, armed, flying, emergency, and fault handling.*
+
+#### Figure 4.8: Initialization Sequence
+
+![Initialization Sequence](diagrams/rendered/behavioral/D6.3_initialization_sequence.png)
+
+*Figure 4.8 details the power-on initialization sequence with sensor calibration, system checks, and arm/disarm procedures.*
+
+#### Figure 4.9: Emergency Shutdown Procedure
+
+![Emergency Shutdown](diagrams/rendered/behavioral/D6.4_emergency_shutdown_sequence.png)
+
+*Figure 4.9 illustrates the emergency shutdown sequence triggered by critical faults, including motor kill and safe state entry.*
+
 | WBS ID | Work Package | Duration | Effort | Key Deliverables | Critical Success Factors |
 |--------|--------------|----------|--------|------------------|-------------------------|
 | 4.6.1 | Watchdog Implementation | 2 days | 8h | Watchdog timer config, reset handling | Watchdog triggers on hang, recovers safely |
 | 4.6.2 | Failsafe Conditions | 2 days | 8h | Failsafe logic, safe state definition | Triggers on sensor loss, enters safe mode |
 | 4.6.3 | Error Detection | 2 days | 8h | Error checking, anomaly detection | Detects comm failures, invalid states, sensor errors |
 | 4.6.4 | Recovery Procedures | 2 days | 8h | Recovery logic, graceful degradation | Attempts recovery, logs errors, alerts operator |
+
+#### Figure 4.10: Phase 3-4 Detailed Timeline (Gantt)
+
+![Phase 3 Gantt](diagrams/rendered/timeline/D4.3_phase3_detailed_gantt.png)
+
+*Figure 4.10 provides the detailed 6-8 week timeline for Phases 3-4 with HIL work packages, dependencies, and milestone tracking.*
 
 ---
 

@@ -24,6 +24,12 @@ The UAV Flight Controller with On-Board Reinforcement Learning project represent
 
 The project adopts a simulation-first, hardware-last methodology that systematically reduces risk while building complexity incrementally. Beginning with pure software-in-the-loop (SITL) simulation using classical control baselines, the project progresses through reinforcement learning policy development, hardware-in-the-loop (HIL) validation with embedded systems, and culminates in custom flight controller hardware integration. This staged approach ensures each subsystem is thoroughly validated before integration, minimizing costly hardware iterations and enabling rapid prototyping of control algorithms in safe, repeatable simulation environments.
 
+#### Figure 1.1: Overall System Context
+
+![Overall System Context](diagrams/rendered/architecture/D1.1_system_context.png)
+
+*Figure 1.1 illustrates the four-stage system progression from pure simulation (SITL) through RL policy development, hardware-in-the-loop validation, and finally custom hardware integration. Each stage builds upon the previous, systematically reducing risk while increasing system complexity and fidelity.
+
 This system treats the UAV as a system-of-systems comprising four distinct subsystems: a high-fidelity physics simulation environment, a reinforcement learning training and inference pipeline, embedded real-time firmware, and custom flight controller hardware. Each subsystem presents unique engineering challenges spanning physics modeling, deep learning optimization, real-time embedded programming, and PCB design. The integration of these subsystems creates a cohesive intelligent flight control platform capable of adaptive control strategies learned through interaction with simulation environments and deployable on resource-constrained flight hardware.
 
 ### 1.2 WBS Purpose and Usage
@@ -52,6 +58,12 @@ This WBS follows a hierarchical decomposition methodology based on systems engin
 **Level 4 - Tasks**: At the most granular level, deliverables are decomposed into specific technical activities required to produce them. These tasks include time estimates, resource requirements, and detailed descriptions sufficient for assignment and execution.
 
 The 100% Rule applies: all work packages at each level completely represent the scope of their parent work package, with no gaps or overlaps. Work not explicitly included in this WBS is out of scope.
+
+#### Figure 1.2: WBS System Hierarchy
+
+![System Hierarchy Decomposition](diagrams/rendered/architecture/D1.2_system_hierarchy.png)
+
+**Figure 1.2** provides the complete system hierarchy decomposition across all six project phases, showing the four-level WBS structure with color-coded phases for visual navigation. This diagram serves as a visual index to the entire project scope.
 
 ### 1.4 Document Organization
 
@@ -89,6 +101,12 @@ This master overview provides strategic planning information. For detailed execu
 - **4.x work packages** → See [Phase 4 HIL Flight Control](./04_WBS_Phase4_HIL_Flight_Control.md)
 - **5.x work packages** → See [Phase 5 Custom Hardware](./05_WBS_Phase5_Custom_Hardware.md)
 - **6.x work packages** → See [Phase 6 Integration & Validation](./06_WBS_Phase6_Integration_Validation.md)
+
+#### Figure 1.3: Project Methodology Workflow
+
+![Project Methodology Workflow](diagrams/rendered/process/D2.1_methodology_workflow.png)
+
+**Figure 1.3** shows the six-phase project methodology with defined stage gates between each phase. Each gate includes entry/exit criteria, documentation reviews, and go/no-go decision points ensuring controlled progression through the project lifecycle.
 
 ---
 
@@ -515,6 +533,18 @@ This master overview provides strategic planning information. For detailed execu
      └─── 6.3.4 Future Work Recommendations
 ```
 
+#### Figure 1.6: Integration & Validation Architecture
+
+![Integration Architecture](diagrams/rendered/architecture/D1.6_integration_architecture.png)
+
+*Figure 1.6 shows the complete integration architecture combining SITL baseline, RL-trained policy, HIL firmware, and custom hardware into the final validated system.*
+
+#### Figure 1.7: Testing & Validation Workflow
+
+![Testing & Validation Workflow](diagrams/rendered/process/D2.4_testing_validation_workflow.png)
+
+*Figure 1.7 details the comprehensive 8-phase testing strategy from unit tests through acceptance testing, with progressive flight testing levels and 24-week timeline.*
+
 ---
 
 ## 4. Project Timeline & Resource Analysis
@@ -543,6 +573,12 @@ This master overview provides strategic planning information. For detailed execu
 - Stage 2 (RL training) duration highly variable—compute time dominates calendar time
 - Stage 4 duration includes 6-10 week hardware procurement/fabrication lead time
 - 25% contingency buffer recommended for overall project timeline
+
+#### Figure 1.4: Master Project Timeline
+
+![Master Project Timeline](diagrams/rendered/timeline/D4.1_master_gantt.png)
+
+*Figure 1.4 shows the comprehensive 52-week project timeline with all six phases, stage gates, effort distribution, and resource loading across the project lifecycle.*
 
 ### 4.2 Resource Loading Analysis
 
@@ -597,6 +633,12 @@ The project critical path runs through all major stages sequentially:
 - **RL training time**: Use cloud GPU resources; implement efficient training; accept "good enough" rather than perfect
 - **Hardware lead times**: Order development boards early; maintain relationships with fast-turn PCB vendors
 - **Single-threading**: Cross-train team members to reduce single points of failure
+
+#### Figure 1.8: Safety & Fault Management Architecture
+
+![Safety Architecture](diagrams/rendered/architecture/D1.7_safety_fault_management.png)
+
+*Figure 1.8 illustrates the 5-layer safety architecture with envelope protection, fault detection, emergency response procedures, and <1ms critical response time requirements.*
 
 ### 4.4 Gantt Chart Description
 
@@ -666,6 +708,12 @@ The following describes the project timeline with dependencies and parallel work
 - Hardware lead times highly variable—order early and track proactively
 - RL training can extend significantly if convergence difficult
 - Buffer between stages allows for gate review preparation and transition
+
+#### Figure 1.5: Phase Dependencies & Critical Path
+
+![Phase Dependencies](diagrams/rendered/timeline/D4.4_phase_dependencies.png)
+
+*Figure 1.5 illustrates the critical dependencies between phases, sequential stage gates, and parallel work opportunities throughout the project.*
 
 ---
 

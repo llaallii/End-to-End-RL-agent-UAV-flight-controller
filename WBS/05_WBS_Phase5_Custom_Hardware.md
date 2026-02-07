@@ -32,6 +32,12 @@
 
 Phase 5 (Stage 4) designs and fabricates custom flight controller hardware integrating the validated firmware from Phase 4. This phase includes hardware requirements specification, schematic design, PCB layout, BOM creation and sourcing, fabrication and assembly, and hardware bring-up validation. Success produces functional custom flight controller PCB ready for system integration.
 
+#### Figure 5.1: Custom Hardware Architecture
+
+![Custom Hardware Architecture](diagrams/rendered/architecture/D1.5_custom_hardware_architecture.png)
+
+*Figure 5.1 shows the complete custom flight controller PCB architecture with STM32 MCU, power management, sensor interfaces, motor drivers, and communication peripherals.*
+
 ### Total Duration and Effort
 
 - **Duration**: 10-14 weeks (dominated by fabrication lead times: 6-10 weeks)

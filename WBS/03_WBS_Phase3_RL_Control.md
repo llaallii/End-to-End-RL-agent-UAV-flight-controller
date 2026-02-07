@@ -32,6 +32,12 @@
 
 Phase 3 (Stage 2) develops the reinforcement learning-based flight controller to replace or augment the classical PID baseline. This phase integrates an RL framework, designs the training environment with observation/action spaces and reward function, architects the neural network policy, conducts iterative training with hyperparameter tuning, evaluates performance against baseline, and prepares the policy for embedded deployment through quantization and compression. This stage represents the core machine learning innovation of the project.
 
+#### Figure 3.1: RL Training Pipeline
+
+![RL Training Pipeline](diagrams/rendered/process/D2.2_rl_training_pipeline.png)
+
+*Figure 3.1 shows the complete RL training workflow from framework integration through policy deployment, including iterative training process and hyperparameter optimization.*
+
 ### Total Duration and Effort
 
 - **Duration**: 10-12 weeks
@@ -71,6 +77,12 @@ Phase 3 (Stage 2) develops the reinforcement learning-based flight controller to
 ✅ Training process documented and reproducible
 ✅ Policy validated in multiple test scenarios
 ✅ All Stage 2→3 gate criteria satisfied
+
+#### Figure 3.2: RL Training State Machine
+
+![RL Training State Machine](diagrams/rendered/behavioral/D6.2_rl_training_state_machine.png)
+
+*Figure 3.2 illustrates the state machine controlling the iterative RL training process with states for initialization, training, evaluation, hyperparameter tuning, and convergence validation.*
 
 ### Risk Summary
 
@@ -152,6 +164,12 @@ Phase 3 (Stage 2) develops the reinforcement learning-based flight controller to
 
 **Description**: Design neural network architecture for policy including layer structure, activation functions, input/output normalization, and policy type (stochastic vs deterministic). Architecture affects learning speed, final performance, and embedded deployment feasibility.
 
+#### Figure 3.3: Neural Network Policy Architecture
+
+![Neural Network Architecture](diagrams/rendered/components/D5.5_neural_network_architecture.png)
+
+*Figure 3.3 details the multi-layer neural network architecture with actor-critic structure, shared/separate layers, activation functions, and dimensions.*
+
 **Deliverables**: Network architecture definition, normalization strategy, policy structure, architecture validation
 
 **Prerequisites**: 3.2 Training Environment Design (spaces define network I/O)
@@ -174,6 +192,12 @@ Phase 3 (Stage 2) develops the reinforcement learning-based flight controller to
 **Duration**: 4-6 weeks | **Effort**: 80 person-hours
 
 **Description**: Conduct iterative training of RL policy with systematic hyperparameter tuning. Includes 3+ training iterations with performance analysis between iterations. Long calendar duration but lower human effort (mostly compute time). Most uncertain phase due to RL training variability.
+
+#### Figure 3.4: Hyperparameter Tuning Workflow
+
+![Hyperparameter Tuning](diagrams/rendered/process/D2.3_rl_hyperparameter_tuning.png)
+
+*Figure 3.4 shows the systematic hyperparameter optimization workflow with grid search, random search, and Bayesian optimization strategies across multiple training iterations.*
 
 **Deliverables**: Trained policies (multiple iterations), hyperparameter configurations, training logs, convergence analysis
 
@@ -199,6 +223,12 @@ Phase 3 (Stage 2) develops the reinforcement learning-based flight controller to
 **Duration**: 2 weeks | **Effort**: 50 person-hours
 
 **Description**: Comprehensive evaluation of trained RL policy vs PID baseline across multiple metrics and test scenarios. Includes quantitative metrics (tracking error, control effort, robustness) and generalization testing (unseen scenarios).
+
+#### Figure 3.5: RL Policy Data Flow
+
+![RL Policy Dataflow](diagrams/rendered/dataflow/D3.3_rl_policy_dataflow.png)
+
+*Figure 3.5 illustrates the complete data flow through the trained RL policy from sensor observations through neural network inference to motor commands.*
 
 **Deliverables**: Evaluation environment, performance metrics, baseline comparison, generalization tests, evaluation report
 
