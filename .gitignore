@@ -395,10 +395,4 @@ yarn.lock
 !README.md
 !LICENSE
 
-# Keep rendered diagrams (comment out if you want to regenerate on pull)
-!diagrams/rendered/**/*.png
-!diagrams/rendered/**/*.svg
 
-# Keep documentation
-!WBS/**/*.md
-!docs/**/*.md
