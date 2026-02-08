@@ -1,0 +1,10 @@
+active: true
+derived: false
+header: ''
+level: 1.8
+links: []
+normative: true
+ref: ''
+reviewed: null
+text: |
+  CPU load shall be monitored in flight; load >80% shall generate a WARNING and >95% shall generate a CRITICAL alert.

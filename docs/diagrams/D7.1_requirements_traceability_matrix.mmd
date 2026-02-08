@@ -1,0 +1,91 @@
+flowchart TB
+    subgraph SRS["SYSTEM REQUIREMENTS"]
+        SR1["SR-001: UAV Flight Control<br/>Autonomous quadrotor flight<br/>Priority: Critical"]
+        SR2["SR-002: RL-Based Control<br/>ML-powered controller<br/>Priority: High"]
+        SR3["SR-003: SITL Simulation<br/>Software-in-loop testing<br/>Priority: Critical"]
+        SR4["SR-004: HIL Validation<br/>Hardware-in-loop testing<br/>Priority: High"]
+        SR5["SR-005: Custom Hardware<br/>Custom flight controller PCB<br/>Priority: Medium"]
+        SR6["SR-006: Safety Systems<br/>Fault detection & recovery<br/>Priority: Critical"]
+    end
+    
+    subgraph FR["FUNCTIONAL REQUIREMENTS"]
+        FR1["FR-001: Stable Hover<br/>60+ seconds, ±0.5m accuracy"]
+        FR2["FR-002: Position Control<br/>±0.5m error, <3s settling"]
+        FR3["FR-003: Attitude Control<br/>±5°, 100+ Hz update"]
+        FR4["FR-004: RL Inference<br/><10ms latency, <1MB memory"]
+        FR5["FR-005: Safety Response<br/><100ms detect, <1s action"]
+    end
+    
+    subgraph DS["DESIGN SPECIFICATIONS"]
+        DS1["DS-001: Gazebo Simulation<br/>0.004s timestep, real-time"]
+        DS2["DS-002: RL Framework<br/>Stable-Baselines3, PPO/SAC"]
+        DS3["DS-003: MCU Platform<br/>STM32F4/F7, 168+ MHz"]
+        DS4["DS-004: PCB Design<br/>4-layer, <100x100mm"]
+        DS5["DS-005: RTOS<br/>FreeRTOS, static allocation"]
+    end
+    
+    subgraph WBS["WORK PACKAGES"]
+        WBS1["WBS 1.0: Infrastructure<br/>Status: Complete"]
+        WBS2["WBS 2.0: SITL Baseline<br/>Status: Complete"]
+        WBS3["WBS 3.0: RL Control<br/>Status: Complete"]
+        WBS4["WBS 4.0: HIL Flight<br/>Status: Complete"]
+        WBS5["WBS 5.0: Custom Hardware<br/>Status: Complete"]
+        WBS6["WBS 6.0: Integration<br/>Status: Complete"]
+    end
+    
+    subgraph TC["TEST CASES"]
+        TC1["TC-001: SITL Baseline<br/>Hover stability test"]
+        TC2["TC-002: RL Training<br/>Convergence validation"]
+        TC3["TC-003: HIL Real-Time<br/>Timing validation"]
+        TC4["TC-004: Hardware Boot<br/>Power-on sequence"]
+        TC5["TC-005: Integration<br/>End-to-end system"]
+    end
+    
+    %% System Requirements to Functional
+    SR1 --> FR1
+    SR1 --> FR2
+    SR1 --> FR3
+    SR2 --> FR4
+    SR6 --> FR5
+    
+    %% Functional to Design
+    FR1 --> DS1
+    FR2 --> DS1
+    FR3 --> DS1
+    FR4 --> DS2
+    FR4 --> DS3
+    FR5 --> DS5
+    
+    %% Design to WBS
+    DS1 --> WBS2
+    DS2 --> WBS3
+    DS3 --> WBS4
+    DS4 --> WBS5
+    DS5 --> WBS4
+    
+    %% WBS to Test Cases
+    WBS2 --> TC1
+    WBS3 --> TC2
+    WBS4 --> TC3
+    WBS5 --> TC4
+    WBS6 --> TC5
+    
+    %% Test Cases verify System Requirements
+    TC1 --> SR3
+    TC2 --> SR2
+    TC3 --> SR4
+    TC4 --> SR5
+    TC5 --> SR1
+    
+    classDef sysReq fill:#ff6b6b,stroke:#c92a2a,stroke-width:3px,color:#fff
+    classDef funcReq fill:#4ecdc4,stroke:#0b7285,stroke-width:3px,color:#fff
+    classDef designSpec fill:#95e1d3,stroke:#087f5b,stroke-width:2px,color:#000
+    classDef wbsTask fill:#a8dadc,stroke:#1d3557,stroke-width:2px,color:#000
+    classDef testCase fill:#ffd93d,stroke:#f08c00,stroke-width:2px,color:#000
+    
+    class SR1,SR2,SR3,SR4,SR5,SR6 sysReq
+    class FR1,FR2,FR3,FR4,FR5 funcReq
+    class DS1,DS2,DS3,DS4,DS5 designSpec
+    class WBS1,WBS2,WBS3,WBS4,WBS5,WBS6 wbsTask
+    class TC1,TC2,TC3,TC4,TC5 testCase
+

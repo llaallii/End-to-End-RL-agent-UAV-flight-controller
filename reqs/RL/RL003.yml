@@ -1,0 +1,10 @@
+active: true
+derived: false
+header: ''
+level: 1.3
+links: []
+normative: true
+ref: ''
+reviewed: null
+text: |
+  The action space shall output 4 motor commands bounded in the range [-1, 1] via Tanh activation.

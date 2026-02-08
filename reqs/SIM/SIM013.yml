@@ -1,0 +1,10 @@
+active: true
+derived: false
+header: ''
+level: 1.13
+links: []
+normative: true
+ref: ''
+reviewed: null
+text: |
+  The PID baseline controller shall achieve stable hover for >=60 seconds in simulation.

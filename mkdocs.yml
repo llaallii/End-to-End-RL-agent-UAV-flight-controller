@@ -1,0 +1,109 @@
+# ============================================================================
+# MkDocs Configuration — End-to-End RL UAV Flight Controller
+# ============================================================================
+site_name: End-to-End RL UAV Flight Controller
+site_description: Documentation for an RL-powered autonomous UAV flight controller
+site_author: Ratan Lal Bunkar
+site_url: ""
+
+repo_name: End-to-End-RL-agent-UAV-flight-controller
+# repo_url: https://github.com/<owner>/End-to-End-RL-agent-UAV-flight-controller
+
+# ── Theme ───────────────────────────────────────────────────────────────────
+theme:
+  name: material
+  palette:
+    - scheme: default
+      primary: indigo
+      accent: amber
+      toggle:
+        icon: material/brightness-7
+        name: Switch to dark mode
+    - scheme: slate
+      primary: indigo
+      accent: amber
+      toggle:
+        icon: material/brightness-4
+        name: Switch to light mode
+  features:
+    - navigation.tabs
+    - navigation.sections
+    - navigation.expand
+    - navigation.top
+    - search.suggest
+    - search.highlight
+    - content.code.copy
+    - content.tabs.link
+  icon:
+    repo: fontawesome/brands/github
+
+# ── Navigation ──────────────────────────────────────────────────────────────
+nav:
+  - Home: index.md
+  - Architecture:
+      - System Overview: architecture/system-overview.md
+  - Requirements:
+      - Overview: requirements/index.md
+  - Work Breakdown:
+      - Master Overview: WBS/00_WBS_Master_Overview.md
+      - Phase 1 - Infrastructure: WBS/01_WBS_Phase1_Infrastructure.md
+      - Phase 2 - SITL Baseline: WBS/02_WBS_Phase2_SITL_Baseline.md
+      - Phase 3 - RL Control: WBS/03_WBS_Phase3_RL_Control.md
+      - Phase 4 - HIL Flight Control: WBS/04_WBS_Phase4_HIL_Flight_Control.md
+      - Phase 5 - Custom Hardware: WBS/05_WBS_Phase5_Custom_Hardware.md
+      - Phase 6 - Integration: WBS/06_WBS_Phase6_Integration_Validation.md
+  - Stage Gates:
+      - Gate Criteria: gates/index.md
+  - Templates:
+      - Document Templates: templates/index.md
+  - Contributing: contributing.md
+
+# ── Plugins ─────────────────────────────────────────────────────────────────
+plugins:
+  - search
+  - mermaid2
+
+# ── Markdown Extensions ─────────────────────────────────────────────────────
+markdown_extensions:
+  - abbr
+  - admonition
+  - attr_list
+  - def_list
+  - footnotes
+  - md_in_html
+  - tables
+  - toc:
+      permalink: true
+  - pymdownx.arithmatex:
+      generic: true
+  - pymdownx.betterem
+  - pymdownx.caret
+  - pymdownx.details
+  - pymdownx.emoji:
+      emoji_index: !!python/name:material.extensions.emoji.twemoji
+      emoji_generator: !!python/name:material.extensions.emoji.to_svg
+  - pymdownx.highlight:
+      anchor_linenums: true
+      line_spans: __span
+      pygments_lang_class: true
+  - pymdownx.inlinehilite
+  - pymdownx.keys
+  - pymdownx.mark
+  - pymdownx.smartsymbols
+  - pymdownx.superfences:
+      custom_fences:
+        - name: mermaid
+          class: mermaid
+          format: !!python/name:pymdownx.superfences.fence_code_format
+  - pymdownx.tabbed:
+      alternate_style: true
+  - pymdownx.tasklist:
+      custom_checkbox: true
+  - pymdownx.tilde
+
+# ── Extra ───────────────────────────────────────────────────────────────────
+extra:
+  social: []
+
+extra_javascript:
+  - https://unpkg.com/mermaid@10/dist/mermaid.min.js

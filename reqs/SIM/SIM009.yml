@@ -1,0 +1,10 @@
+active: true
+derived: false
+header: ''
+level: 1.9
+links: []
+normative: true
+ref: ''
+reviewed: null
+text: |
+  The IMU sensor model shall publish accelerometer and gyroscope data at >=100 Hz.

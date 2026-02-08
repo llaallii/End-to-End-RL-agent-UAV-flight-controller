@@ -1,0 +1,10 @@
+active: true
+derived: false
+header: ''
+level: 1.6
+links: []
+normative: true
+ref: ''
+reviewed: null
+text: |
+  Each stage gate shall produce a documented go/no-go decision with exit criteria checklist, entry criteria checklist, and formal authorization.

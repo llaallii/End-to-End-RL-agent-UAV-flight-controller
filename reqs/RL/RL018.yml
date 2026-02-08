@@ -1,0 +1,10 @@
+active: true
+derived: false
+header: ''
+level: 1.18
+links: []
+normative: true
+ref: ''
+reviewed: null
+text: |
+  The compressed policy shall be exported in an embedded-friendly format (ONNX, TFLite, or custom C array).

@@ -1,0 +1,119 @@
+graph TD
+    subgraph "REQUIREMENTS FLOW-DOWN HIERARCHY"
+        subgraph "Level 0: Mission Statement"
+            L0["MISSION: Autonomous UAV Flight Control<br/>using Reinforcement Learning<br/>━━━━━━━━━━━━━━━━━━━━━━━━━<br/>Develop ML-based flight controller<br/>through simulation-first methodology"]
+        end
+        
+        subgraph "Level 1: System Requirements"
+            L1_1["SR-001: Flight Control Capability<br/>• Autonomous quadrotor flight<br/>• Stable hover and position control<br/>• Real-time operation"]
+            L1_2["SR-002: ML/RL Implementation<br/>• RL-based controller<br/>• Training in simulation<br/>• Embedded deployment"]
+            L1_3["SR-003: Safety & Reliability<br/>• Fault detection/handling<br/>• Emergency procedures<br/>• Graceful degradation"]
+            L1_4["SR-004: Development Process<br/>• Simulation-first approach<br/>• Progressive validation<br/>• Stage-gate methodology"]
+        end
+        
+        subgraph "Level 2: Subsystem Requirements"
+            L2_1["SITL Subsystem<br/>━━━━━━━━━━━━<br/>• Gazebo simulation<br/>• UAV dynamics model<br/>• Sensor simulation<br/>• PID baseline"]
+            L2_2["RL Training Subsystem<br/>━━━━━━━━━━━━━━━<br/>• RL framework integration<br/>• Training environment<br/>• Policy architecture<br/>• Hyperparameter tuning"]
+            L2_3["HIL Subsystem<br/>━━━━━━━━━━━<br/>• MCU firmware<br/>• RL inference porting<br/>• HIL interface<br/>• Real-time validation"]
+            L2_4["Hardware Subsystem<br/>━━━━━━━━━━━━━━<br/>• Custom PCB design<br/>• Power management<br/>• Sensor interfaces<br/>• Motor control"]
+            L2_5["Safety Subsystem<br/>━━━━━━━━━━━━━<br/>• Watchdog timers<br/>• Failsafe logic<br/>• Error detection<br/>• Recovery procedures"]
+            L2_6["Integration Subsystem<br/>━━━━━━━━━━━━━━━━<br/>• End-to-end testing<br/>• Performance validation<br/>• Documentation<br/>• Knowledge transfer"]
+        end
+        
+        subgraph "Level 3: Component Requirements"
+            L3_1["Gazebo Environment<br/>• Physics: 0.004s step<br/>• Real-time: ≥1x<br/>• ROS integration"]
+            L3_2["UAV Dynamics<br/>• 6-DOF equations<br/>• Motor/propeller model<br/>• Aerodynamics"]
+            L3_3["Sensor Models<br/>• IMU: 100+ Hz<br/>• Noise: realistic<br/>• I2C/SPI interface"]
+            L3_4["PID Controller<br/>• Cascaded structure<br/>• Attitude/position<br/>• Tuned parameters"]
+            
+            L3_5["RL Framework<br/>• Stable-Baselines3<br/>• PPO/SAC algorithm<br/>• GPU training"]
+            L3_6["Training Env<br/>• Gym wrapper<br/>• Observation space<br/>• Reward function"]
+            L3_7["Neural Network<br/>• 2-3 hidden layers<br/>• 64-256 units/layer<br/>• <1M parameters"]
+            L3_8["Policy Compression<br/>• Quantization: INT8<br/>• Size: <1MB<br/>• Performance: <5% loss"]
+            
+            L3_9["MCU Platform<br/>• STM32F4/F7<br/>• 168+ MHz<br/>• 256+ KB RAM"]
+            L3_10["RTOS<br/>• FreeRTOS kernel<br/>• Static tasks<br/>• <10ms control loop"]
+            L3_11["Inference Engine<br/>• TFLite Micro<br/>• <10ms latency<br/>• Fixed-point math"]
+            L3_12["HIL Interface<br/>• UART/USB comm<br/>• Binary protocol<br/>• Error detection"]
+            
+            L3_13["PCB Design<br/>• 4-layer board<br/>• <100x100mm<br/>• Power/ground planes"]
+            L3_14["Power Supply<br/>• 5V/3.3V rails<br/>• 2+ A capacity<br/>• <50mV ripple"]
+            L3_15["Sensor Interface<br/>• I2C/SPI drivers<br/>• Data filtering<br/>• State estimation"]
+            L3_16["Motor Control<br/>• PWM generation<br/>• ESC interface<br/>• 400-2000μs pulses"]
+            
+            L3_17["Watchdog Timer<br/>• HW watchdog enable<br/>• Timeout: 1s<br/>• Reset on hang"]
+            L3_18["Failsafe Logic<br/>• Sensor loss detect<br/>• Safe mode trigger<br/>• Motor kill option"]
+            L3_19["Error Detection<br/>• Comm validation<br/>• State monitoring<br/>• Anomaly detection"]
+            L3_20["Recovery Proc<br/>• Graceful recovery<br/>• Error logging<br/>• Operator alert"]
+            
+            L3_21["Regression Tests<br/>• SITL/HIL/HW<br/>• Automated scripts<br/>• Pass/fail criteria"]
+            L3_22["Performance Tests<br/>• RL vs PID compare<br/>• Cross-stage tracking<br/>• Metrics: error/effort"]
+            L3_23["Documentation<br/>• Technical specs<br/>• User manuals<br/>• Design rationale"]
+            L3_24["Knowledge Transfer<br/>• Presentations<br/>• Demonstrations<br/>• Lessons learned"]
+        end
+    end
+    
+    %% Level 0 to Level 1
+    L0 --> L1_1
+    L0 --> L1_2
+    L0 --> L1_3
+    L0 --> L1_4
+    
+    %% Level 1 to Level 2
+    L1_1 --> L2_1
+    L1_1 --> L2_4
+    L1_2 --> L2_2
+    L1_2 --> L2_3
+    L1_3 --> L2_5
+    L1_4 --> L2_1
+    L1_4 --> L2_2
+    L1_4 --> L2_3
+    L1_4 --> L2_4
+    L1_4 --> L2_6
+    
+    %% Level 2 to Level 3 (SITL)
+    L2_1 --> L3_1
+    L2_1 --> L3_2
+    L2_1 --> L3_3
+    L2_1 --> L3_4
+    
+    %% Level 2 to Level 3 (RL Training)
+    L2_2 --> L3_5
+    L2_2 --> L3_6
+    L2_2 --> L3_7
+    L2_2 --> L3_8
+    
+    %% Level 2 to Level 3 (HIL)
+    L2_3 --> L3_9
+    L2_3 --> L3_10
+    L2_3 --> L3_11
+    L2_3 --> L3_12
+    
+    %% Level 2 to Level 3 (Hardware)
+    L2_4 --> L3_13
+    L2_4 --> L3_14
+    L2_4 --> L3_15
+    L2_4 --> L3_16
+    
+    %% Level 2 to Level 3 (Safety)
+    L2_5 --> L3_17
+    L2_5 --> L3_18
+    L2_5 --> L3_19
+    L2_5 --> L3_20
+    
+    %% Level 2 to Level 3 (Integration)
+    L2_6 --> L3_21
+    L2_6 --> L3_22
+    L2_6 --> L3_23
+    L2_6 --> L3_24
+    
+    %% Styling
+    classDef mission fill:#6c5ce7,stroke:#5f3dc4,stroke-width:4px,color:#fff,font-size:14px
+    classDef sysReq fill:#ff6b6b,stroke:#c92a2a,stroke-width:3px,color:#fff
+    classDef subsysReq fill:#4ecdc4,stroke:#0b7285,stroke-width:3px,color:#fff
+    classDef compReq fill:#a8dadc,stroke:#1d3557,stroke-width:2px,color:#000
+    
+    class L0 mission
+    class L1_1,L1_2,L1_3,L1_4 sysReq
+    class L2_1,L2_2,L2_3,L2_4,L2_5,L2_6 subsysReq
+    class L3_1,L3_2,L3_3,L3_4,L3_5,L3_6,L3_7,L3_8,L3_9,L3_10,L3_11,L3_12,L3_13,L3_14,L3_15,L3_16,L3_17,L3_18,L3_19,L3_20,L3_21,L3_22,L3_23,L3_24 compReq

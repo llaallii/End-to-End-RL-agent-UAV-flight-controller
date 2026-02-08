@@ -1,0 +1,10 @@
+active: true
+derived: false
+header: ''
+level: 1.24
+links: []
+normative: true
+ref: ''
+reviewed: null
+text: |
+  The system shall block arming if sensor calibration is invalid, GPS fix is not acquired (in outdoor mode), or battery is <3.7 V/cell.

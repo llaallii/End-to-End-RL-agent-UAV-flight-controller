@@ -1,0 +1,11 @@
+active: true
+derived: false
+header: ''
+level: 1.1
+links:
+- SYS001: null
+normative: true
+ref: ''
+reviewed: null
+text: |
+  The Safety Monitor task shall execute at 100 Hz as the highest-priority RTOS task.

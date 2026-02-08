@@ -1,0 +1,10 @@
+active: true
+derived: false
+header: ''
+level: 1.5
+links: []
+normative: true
+ref: ''
+reviewed: null
+text: |
+  The UAV dynamics model shall implement full 6-DOF rigid-body equations of motion (3 translational + 3 rotational).

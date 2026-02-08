@@ -1,0 +1,10 @@
+active: true
+derived: false
+header: ''
+level: 1.7
+links: []
+normative: true
+ref: ''
+reviewed: null
+text: |
+  Control loop timing jitter shall be <1 ms.

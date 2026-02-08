@@ -1,0 +1,10 @@
+active: true
+derived: false
+header: ''
+level: 1.8
+links: []
+normative: true
+ref: ''
+reviewed: null
+text: |
+  The aerodynamic model shall produce drag forces that oppose vehicle motion and produce a realistic terminal velocity.

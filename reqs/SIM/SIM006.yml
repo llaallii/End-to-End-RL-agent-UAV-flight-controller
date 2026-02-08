@@ -1,0 +1,10 @@
+active: true
+derived: false
+header: ''
+level: 1.6
+links: []
+normative: true
+ref: ''
+reviewed: null
+text: |
+  The motor model shall simulate first-order thrust response with a time constant of 50-100 ms.

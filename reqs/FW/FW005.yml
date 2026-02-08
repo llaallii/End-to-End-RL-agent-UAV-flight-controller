@@ -1,0 +1,10 @@
+active: true
+derived: false
+header: ''
+level: 1.5
+links: []
+normative: true
+ref: ''
+reviewed: null
+text: |
+  RL policy inference (forward pass) shall complete in <5 ms on the target MCU using INT8 quantization, targeting ~3 ms.

@@ -1,0 +1,10 @@
+active: true
+derived: false
+header: ''
+level: 1.17
+links: []
+normative: true
+ref: ''
+reviewed: null
+text: |
+  Post-quantization (INT8) performance degradation shall be <5% relative to FP32 on all key metrics.

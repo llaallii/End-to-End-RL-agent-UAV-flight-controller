@@ -1,0 +1,10 @@
+active: true
+derived: false
+header: ''
+level: 1.23
+links: []
+normative: true
+ref: ''
+reviewed: null
+text: |
+  RL inference timeout >10 ms shall trigger a WARNING and automatic switch to the PID fallback controller.

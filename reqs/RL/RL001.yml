@@ -1,0 +1,11 @@
+active: true
+derived: false
+header: ''
+level: 1.1
+links:
+- SYS001: null
+normative: true
+ref: ''
+reviewed: null
+text: |
+  The RL observation space shall include at minimum: position (3), velocity (3), attitude (3), angular rates (3), and goal position (3), totaling >=15 dimensions.

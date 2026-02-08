@@ -1,0 +1,10 @@
+active: true
+derived: false
+header: ''
+level: 1.20
+links: []
+normative: true
+ref: ''
+reviewed: null
+text: |
+  The SITL test campaign shall achieve >=90% requirement coverage as documented in the verification matrix.

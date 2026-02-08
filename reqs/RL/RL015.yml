@@ -1,0 +1,10 @@
+active: true
+derived: false
+header: ''
+level: 1.15
+links: []
+normative: true
+ref: ''
+reviewed: null
+text: |
+  Final convergence validation shall confirm that the training reward curve has plateaued and performance is stable across >=3 random seeds.

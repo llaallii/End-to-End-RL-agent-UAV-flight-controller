@@ -1,0 +1,10 @@
+active: true
+derived: false
+header: ''
+level: 1.4
+links: []
+normative: true
+ref: ''
+reviewed: null
+text: |
+  All technical documentation, user manuals, operating procedures, and design rationale shall be completed and archived in version control before project closure.

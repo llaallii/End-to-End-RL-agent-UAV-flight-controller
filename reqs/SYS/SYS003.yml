@@ -1,0 +1,10 @@
+active: true
+derived: false
+header: ''
+level: 1.3
+links: []
+normative: true
+ref: ''
+reviewed: null
+text: |
+  A quantitative performance comparison (PID baseline vs. RL) shall be generated across all stages (SITL, HIL, hardware).

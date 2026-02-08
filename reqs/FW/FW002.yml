@@ -1,0 +1,10 @@
+active: true
+derived: false
+header: ''
+level: 1.2
+links: []
+normative: true
+ref: ''
+reviewed: null
+text: |
+  The firmware shall run on a real-time operating system (RTOS), with FreeRTOS as the recommended choice.

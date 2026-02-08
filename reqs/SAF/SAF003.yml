@@ -1,0 +1,10 @@
+active: true
+derived: false
+header: ''
+level: 1.3
+links: []
+normative: true
+ref: ''
+reviewed: null
+text: |
+  IMU data staleness shall be detected if no valid reading is received within 1 ms; the fault shall be reported to the Safety Monitor.

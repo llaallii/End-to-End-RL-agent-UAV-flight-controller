@@ -1,0 +1,10 @@
+active: true
+derived: false
+header: ''
+level: 1.6
+links: []
+normative: true
+ref: ''
+reviewed: null
+text: |
+  Domain randomization shall vary at minimum: mass, inertia, motor gains, and sensor noise levels during training.

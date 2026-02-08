@@ -1,0 +1,10 @@
+active: true
+derived: false
+header: ''
+level: 1.16
+links: []
+normative: true
+ref: ''
+reviewed: null
+text: |
+  The PID altitude controller shall hold altitude within +/-0.3 m and settle within 3-5 s of a setpoint change.

@@ -1,0 +1,10 @@
+active: true
+derived: false
+header: ''
+level: 1.7
+links: []
+normative: true
+ref: ''
+reviewed: null
+text: |
+  The UAV model shall have a total mass of approximately 1 kg with documented inertia tensor.

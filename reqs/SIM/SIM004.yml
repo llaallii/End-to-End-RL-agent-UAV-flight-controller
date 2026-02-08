@@ -1,0 +1,10 @@
+active: true
+derived: false
+header: ''
+level: 1.4
+links: []
+normative: true
+ref: ''
+reviewed: null
+text: |
+  The simulation shall sustain stable physics execution for >=10 minutes without drift or crash.

@@ -1,0 +1,10 @@
+active: true
+derived: false
+header: ''
+level: 1.11
+links: []
+normative: true
+ref: ''
+reviewed: null
+text: |
+  The sensor coordinate frames shall be defined in the URDF/SDF model and published as a correct TF tree.

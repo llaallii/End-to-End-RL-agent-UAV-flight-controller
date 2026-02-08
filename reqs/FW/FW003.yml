@@ -1,0 +1,10 @@
+active: true
+derived: false
+header: ''
+level: 1.3
+links: []
+normative: true
+ref: ''
+reviewed: null
+text: |
+  The firmware shall be organized into isolated modules: sensor, control, communication, and safety.

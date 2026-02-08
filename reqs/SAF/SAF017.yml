@@ -1,0 +1,10 @@
+active: true
+derived: false
+header: ''
+level: 1.17
+links: []
+normative: true
+ref: ''
+reviewed: null
+text: |
+  Board temperature shall be monitored at 1 Hz; temperature >70C shall trigger power reduction, and >85C shall trigger emergency shutdown.

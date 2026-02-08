@@ -1,0 +1,10 @@
+active: true
+derived: false
+header: ''
+level: 1.27
+links: []
+normative: true
+ref: ''
+reviewed: null
+text: |
+  Crash detection shall trigger on accelerometer readings >4 g or attitude exceeding +/-90 degrees (flip detection), followed by immediate disarm and log dump.

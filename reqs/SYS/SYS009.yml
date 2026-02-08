@@ -1,0 +1,10 @@
+active: true
+derived: false
+header: ''
+level: 1.9
+links: []
+normative: true
+ref: ''
+reviewed: null
+text: |
+  RAM usage shall be monitored in flight; usage >90% shall generate a WARNING and >98% shall generate a CRITICAL alert.

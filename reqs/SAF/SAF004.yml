@@ -1,0 +1,10 @@
+active: true
+derived: false
+header: ''
+level: 1.4
+links: []
+normative: true
+ref: ''
+reviewed: null
+text: |
+  Barometer data timeout shall be detected at >20 ms; GPS no-fix timeout shall be detected at >30 s.

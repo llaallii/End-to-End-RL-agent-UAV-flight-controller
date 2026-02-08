@@ -1,0 +1,10 @@
+active: true
+derived: false
+header: ''
+level: 1.13
+links: []
+normative: true
+ref: ''
+reviewed: null
+text: |
+  The RL policy shall meet or exceed the PID baseline on at least tracking error, settling time, and control effort metrics.

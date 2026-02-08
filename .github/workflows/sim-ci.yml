@@ -1,0 +1,112 @@
+# ============================================================================
+# Simulation CI Pipeline
+# Lint, build, and test ROS 2 Jazzy + Gazebo simulation packages
+# ============================================================================
+name: Simulation CI
+
+on:
+  push:
+    branches: [develop, main]
+    paths:
+      - 'simulation/**'
+      - 'training/**'
+      - 'tests/**'
+      - 'pyproject.toml'
+      - '.github/workflows/sim-ci.yml'
+  pull_request:
+    branches: [develop, main]
+    paths:
+      - 'simulation/**'
+      - 'training/**'
+      - 'tests/**'
+      - 'pyproject.toml'
+      - '.github/workflows/sim-ci.yml'
+
+concurrency:
+  group: sim-ci-${{ github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  lint:
+    name: Lint (Python)
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Set up Python 3.12
+        uses: actions/setup-python@v5
+        with:
+          python-version: '3.12'
+
+      - name: Install linting tools
+        run: pip install ruff mypy
+
+      - name: Ruff lint
+        run: ruff check simulation/ training/ tests/
+
+      - name: Ruff format check
+        run: ruff format --check simulation/ training/ tests/
+
+      - name: Mypy type check
+        run: mypy simulation/ training/ --ignore-missing-imports
+        continue-on-error: true  # relaxed during early development
+
+  test:
+    name: Test (Python)
+    runs-on: ubuntu-latest
+    needs: lint
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Set up Python 3.12
+        uses: actions/setup-python@v5
+        with:
+          python-version: '3.12'
+
+      - name: Install dependencies
+        run: |
+          pip install -e ".[dev]"
+          pip install pytest-cov
+
+      - name: Run tests
+        run: |
+          pytest tests/ simulation/ training/ \
+            --cov=simulation --cov=training \
+            --cov-report=xml --cov-report=term-missing \
+            -v --tb=short
+
+      - name: Upload coverage
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: coverage-report
+          path: coverage.xml
+
+  # ROS 2 build job — activated once ROS 2 packages exist
+  # ros2-build:
+  #   name: ROS 2 Build (Jazzy)
+  #   runs-on: ubuntu-latest
+  #   container:
+  #     image: osrf/ros:jazzy-desktop
+  #   needs: lint
+  #   steps:
+  #     - uses: actions/checkout@v4
+  #
+  #     - name: Install dependencies
+  #       run: |
+  #         apt-get update
+  #         rosdep update
+  #         rosdep install --from-paths simulation/ros2_ws/src -y --ignore-src
+  #
+  #     - name: Build
+  #       run: |
+  #         source /opt/ros/jazzy/setup.bash
+  #         cd simulation/ros2_ws
+  #         colcon build --symlink-install
+  #
+  #     - name: Test
+  #       run: |
+  #         source /opt/ros/jazzy/setup.bash
+  #         cd simulation/ros2_ws
+  #         colcon test
+  #         colcon test-result --verbose

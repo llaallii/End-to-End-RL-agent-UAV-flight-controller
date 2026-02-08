@@ -1,0 +1,10 @@
+active: true
+derived: false
+header: ''
+level: 1.15
+links: []
+normative: true
+ref: ''
+reviewed: null
+text: |
+  Battery voltage shall be monitored at 10 Hz; voltage <3.5 V/cell shall trigger RTL, <3.3 V/cell shall trigger emergency landing, and <3.0 V/cell shall trigger emergency shutdown.

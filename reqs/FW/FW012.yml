@@ -1,0 +1,10 @@
+active: true
+derived: false
+header: ''
+level: 1.12
+links: []
+normative: true
+ref: ''
+reviewed: null
+text: |
+  The firmware communication driver shall implement buffering, timeout handling, and error recovery.

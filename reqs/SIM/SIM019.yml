@@ -1,0 +1,10 @@
+active: true
+derived: false
+header: ''
+level: 1.19
+links: []
+normative: true
+ref: ''
+reviewed: null
+text: |
+  The SITL verification suite shall include >=10 defined test scenarios that are automated and repeatable.

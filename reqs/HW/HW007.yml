@@ -1,0 +1,10 @@
+active: true
+derived: false
+header: ''
+level: 1.7
+links: []
+normative: true
+ref: ''
+reviewed: null
+text: |
+  The Bill of Materials shall identify all components with manufacturer part numbers, and all long-lead items shall have backup alternates sourced.

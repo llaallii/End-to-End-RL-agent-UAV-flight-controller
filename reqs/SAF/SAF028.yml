@@ -1,0 +1,10 @@
+active: true
+derived: false
+header: ''
+level: 1.28
+links: []
+normative: true
+ref: ''
+reviewed: null
+text: |
+  Fault codes shall be indicated via LED blink patterns (1-9 blinks) and buzzer audio alerts.

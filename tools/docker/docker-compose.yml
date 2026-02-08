@@ -1,0 +1,36 @@
+# ============================================================================
+# Docker Compose — Local Development
+# Provides simulation and firmware build environments
+# ============================================================================
+
+services:
+  # ── Simulation Environment ────────────────────────────────────────────────
+  sim:
+    build:
+      context: ../..
+      dockerfile: tools/docker/Dockerfile.sim
+    container_name: uav-sim
+    volumes:
+      - ../../simulation:/workspace/simulation
+      - ../../training:/workspace/training
+      - ../../tests:/workspace/tests
+    environment:
+      - DISPLAY=${DISPLAY:-:0}
+      - ROS_DOMAIN_ID=42
+    network_mode: host
+    # For GUI (Gazebo/RViz) on Linux:
+    # volumes:
+    #   - /tmp/.X11-unix:/tmp/.X11-unix
+    stdin_open: true
+    tty: true
+
+  # ── Firmware Build Environment ────────────────────────────────────────────
+  firmware:
+    build:
+      context: ../..
+      dockerfile: tools/docker/Dockerfile.firmware
+    container_name: uav-firmware
+    volumes:
+      - ../../firmware:/workspace/firmware
+    stdin_open: true
+    tty: true

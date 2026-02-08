@@ -1,0 +1,60 @@
+# ============================================================================
+# Simulation Development Environment
+# ROS 2 Jazzy + Gazebo Harmonic + Python 3.12 + RL dependencies
+# ============================================================================
+FROM osrf/ros:jazzy-desktop
+
+LABEL maintainer="Ratan Lal Bunkar"
+LABEL description="SITL simulation environment for RL UAV flight controller"
+
+# Avoid interactive prompts during package installation
+ENV DEBIAN_FRONTEND=noninteractive
+
+# ── System dependencies ─────────────────────────────────────────────────────
+RUN apt-get update && apt-get install -y --no-install-recommends \
+    python3-pip \
+    python3-venv \
+    python3-dev \
+    git \
+    curl \
+    wget \
+    vim \
+    # Gazebo Harmonic (comes with jazzy-desktop, but ensure plugins)
+    ros-jazzy-gazebo-ros-pkgs \
+    ros-jazzy-gazebo-ros2-control \
+    # ROS 2 additional packages
+    ros-jazzy-xacro \
+    ros-jazzy-robot-state-publisher \
+    ros-jazzy-joint-state-publisher \
+    ros-jazzy-rviz2 \
+    ros-jazzy-tf2-tools \
+    # Development tools
+    ros-jazzy-ament-cmake \
+    ros-jazzy-ament-lint-auto \
+    python3-colcon-common-extensions \
+    && rm -rf /var/lib/apt/lists/*
+
+# ── Python RL + simulation dependencies ─────────────────────────────────────
+COPY pyproject.toml /tmp/pyproject.toml
+RUN pip3 install --no-cache-dir --break-system-packages \
+    gymnasium \
+    stable-baselines3 \
+    numpy \
+    scipy \
+    matplotlib \
+    tensorboard \
+    torch --index-url https://download.pytorch.org/whl/cpu \
+    ruff \
+    mypy \
+    pytest \
+    pytest-cov
+
+# ── Workspace setup ─────────────────────────────────────────────────────────
+WORKDIR /workspace
+COPY . /workspace
+
+# Source ROS 2 in bashrc
+RUN echo "source /opt/ros/jazzy/setup.bash" >> ~/.bashrc
+
+# ── Default command ─────────────────────────────────────────────────────────
+CMD ["/bin/bash"]

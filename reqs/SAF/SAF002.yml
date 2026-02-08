@@ -1,0 +1,10 @@
+active: true
+derived: false
+header: ''
+level: 1.2
+links: []
+normative: true
+ref: ''
+reviewed: null
+text: |
+  A hardware watchdog timer with a 50 ms timeout shall be implemented; failure to reset shall trigger the EMERGENCY state.

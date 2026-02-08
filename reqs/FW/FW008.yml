@@ -1,0 +1,10 @@
+active: true
+derived: false
+header: ''
+level: 1.8
+links: []
+normative: true
+ref: ''
+reviewed: null
+text: |
+  End-to-end latency from sensor-to-actuator shall be quantified, documented, and acceptable for stable flight.

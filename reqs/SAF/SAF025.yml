@@ -1,0 +1,10 @@
+active: true
+derived: false
+header: ''
+level: 1.25
+links: []
+normative: true
+ref: ''
+reviewed: null
+text: |
+  If RL neural network weights are not loaded, the system shall warn the operator and allow arming in PID-only mode.

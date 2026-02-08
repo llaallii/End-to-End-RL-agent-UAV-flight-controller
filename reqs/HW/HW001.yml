@@ -1,0 +1,11 @@
+active: true
+derived: false
+header: ''
+level: 1.1
+links:
+- SYS001: null
+normative: true
+ref: ''
+reviewed: null
+text: |
+  The custom flight controller PCB shall provide regulated 5 V and 3.3 V power rails with voltage ripple <50 mV.

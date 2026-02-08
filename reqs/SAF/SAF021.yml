@@ -1,0 +1,10 @@
+active: true
+derived: false
+header: ''
+level: 1.21
+links: []
+normative: true
+ref: ''
+reviewed: null
+text: |
+  The following events shall trigger immediate EMERGENCY state: manual kill switch, attitude error >45 degrees, IMU failure, battery <3.0 V/cell, thermal >85C.

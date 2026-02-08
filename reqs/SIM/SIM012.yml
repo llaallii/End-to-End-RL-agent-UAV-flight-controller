@@ -1,0 +1,10 @@
+active: true
+derived: false
+header: ''
+level: 1.12
+links: []
+normative: true
+ref: ''
+reviewed: null
+text: |
+  The simulation world shall include at least 2 distinct world files (e.g., indoor flat, outdoor with obstacles).

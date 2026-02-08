@@ -1,0 +1,10 @@
+active: true
+derived: false
+header: ''
+level: 1.14
+links: []
+normative: true
+ref: ''
+reviewed: null
+text: |
+  The PID controller shall maintain position accuracy within +/-0.5 m during hover.

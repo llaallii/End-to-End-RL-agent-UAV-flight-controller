@@ -1,0 +1,10 @@
+active: true
+derived: false
+header: ''
+level: 1.13
+links: []
+normative: true
+ref: ''
+reviewed: null
+text: |
+  Motor mixer saturation exceeding 90% shall generate a WARNING-level alert.

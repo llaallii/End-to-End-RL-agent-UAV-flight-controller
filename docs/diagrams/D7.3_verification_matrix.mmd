@@ -1,0 +1,174 @@
+graph TB
+    subgraph "VERIFICATION & VALIDATION MATRIX"
+        subgraph "Requirements to Verify"
+            subgraph "Performance Requirements"
+                REQ_P1["PRF-001: Stable Hover<br/>Spec: 60+ seconds stable<br/>Error: ±0.5m position<br/>Priority: CRITICAL"]
+                REQ_P2["PRF-002: Position Control<br/>Spec: ±0.5m tracking error<br/>Settling: <3 seconds<br/>Priority: HIGH"]
+                REQ_P3["PRF-003: Attitude Control<br/>Spec: ±5 degree accuracy<br/>Rate: 100+ Hz update<br/>Priority: CRITICAL"]
+                REQ_P4["PRF-004: Real-Time Execution<br/>Spec: <10ms control loop<br/>Jitter: <1ms<br/>Priority: CRITICAL"]
+            end
+            
+            subgraph "Functional Requirements"
+                REQ_F1["FUN-001: RL Policy Deployment<br/>Spec: Inference <10ms<br/>Memory: <1MB<br/>Priority: HIGH"]
+                REQ_F2["FUN-002: Sensor Fusion<br/>Spec: IMU 100+ Hz, GPS 5+ Hz<br/>Accuracy: Position/attitude<br/>Priority: CRITICAL"]
+                REQ_F3["FUN-003: Safety Response<br/>Spec: Fault detect <100ms<br/>Response: <1s action<br/>Priority: CRITICAL"]
+                REQ_F4["FUN-004: Communication<br/>Spec: MAVLink protocol<br/>Rate: 10+ Hz telemetry<br/>Priority: MEDIUM"]
+            end
+            
+            subgraph "System Requirements"
+                REQ_S1["SYS-001: SITL Baseline<br/>Spec: Functional simulation<br/>PID performance baseline<br/>Priority: CRITICAL"]
+                REQ_S2["SYS-002: RL Training<br/>Spec: Converged policy<br/>Performance ≥ PID<br/>Priority: HIGH"]
+                REQ_S3["SYS-003: HIL Validation<br/>Spec: Firmware on MCU<br/>Real-time constraints met<br/>Priority: HIGH"]
+                REQ_S4["SYS-004: Custom Hardware<br/>Spec: Functional PCB<br/>All subsystems working<br/>Priority: MEDIUM"]
+            end
+        end
+        
+        subgraph "Verification Methods"
+            subgraph "Analysis (A)"
+                VM_A1["Mathematical Analysis<br/>━━━━━━━━━━━━━━━<br/>• Control theory validation<br/>• Stability analysis<br/>• Worst-case timing"]
+                VM_A2["Design Review<br/>━━━━━━━━━━━<br/>• Schematic review<br/>• Code review<br/>• Architecture review"]
+            end
+            
+            subgraph "Test (T)"
+                VM_T1["SITL Simulation Tests<br/>━━━━━━━━━━━━━━━━<br/>• Hover stability tests<br/>• Trajectory tracking<br/>• Disturbance rejection"]
+                VM_T2["HIL Simulation Tests<br/>━━━━━━━━━━━━━━━━<br/>• Real-time validation<br/>• Timing measurements<br/>• Latency analysis"]
+                VM_T3["Hardware Bench Tests<br/>━━━━━━━━━━━━━━━━<br/>• Power-on testing<br/>• Peripheral validation<br/>• Integration tests"]
+                VM_T4["Regression Test Suite<br/>━━━━━━━━━━━━━━━━<br/>• Automated test scripts<br/>• Cross-stage validation<br/>• Performance comparison"]
+            end
+            
+            subgraph "Inspection (I)"
+                VM_I1["Documentation Review<br/>━━━━━━━━━━━━━━━━<br/>• Requirements docs<br/>• Design specs<br/>• Test reports"]
+                VM_I2["Hardware Inspection<br/>━━━━━━━━━━━━━━━━<br/>• PCB visual inspection<br/>• Solder joint quality<br/>• Component placement"]
+            end
+            
+            subgraph "Demonstration (D)"
+                VM_D1["Live Demo SITL<br/>━━━━━━━━━━━━<br/>• Flight scenarios<br/>• Stakeholder review<br/>• Video recording"]
+                VM_D2["Live Demo HIL<br/>━━━━━━━━━━━<br/>• Firmware execution<br/>• Real-time performance<br/>• Safety triggers"]
+                VM_D3["Live Demo Hardware<br/>━━━━━━━━━━━━━━━<br/>• Complete system<br/>• End-to-end flight<br/>• Final acceptance"]
+            end
+        end
+        
+        subgraph "Verification Results"
+            subgraph "Stage 1: SITL Verification"
+                VR_S1["SITL Tests Complete<br/>━━━━━━━━━━━━━━━<br/>✓ Hover: 120s stable<br/>✓ Position: ±0.3m<br/>✓ Attitude: ±3°<br/>Status: PASSED"]
+            end
+            
+            subgraph "Stage 2: RL Verification"
+                VR_S2["RL Training Complete<br/>━━━━━━━━━━━━━━━━<br/>✓ Convergence: Yes<br/>✓ RL vs PID: 15% better<br/>✓ Size: 850KB<br/>Status: PASSED"]
+            end
+            
+            subgraph "Stage 3: HIL Verification"
+                VR_S3["HIL Tests Complete<br/>━━━━━━━━━━━━━━━<br/>✓ Control loop: 8.2ms<br/>✓ Jitter: 0.4ms<br/>✓ Memory: <1MB<br/>Status: PASSED"]
+            end
+            
+            subgraph "Stage 4: Hardware Verification"
+                VR_S4["HW Tests Complete<br/>━━━━━━━━━━━━━━━<br/>✓ Power rails: OK<br/>✓ MCU boot: OK<br/>✓ Peripherals: OK<br/>Status: PASSED"]
+            end
+            
+            subgraph "Integration Verification"
+                VR_INT["Integration Complete<br/>━━━━━━━━━━━━━━━━<br/>✓ Regression: PASS<br/>✓ Performance: PASS<br/>✓ Safety: PASS<br/>Status: PASSED"]
+            end
+        end
+    end
+    
+    %% Performance Requirements to Verification Methods
+    REQ_P1 --> VM_T1
+    REQ_P1 --> VM_T2
+    REQ_P1 --> VM_T3
+    REQ_P1 --> VM_D1
+    REQ_P1 --> VM_D2
+    REQ_P1 --> VM_D3
+    
+    REQ_P2 --> VM_T1
+    REQ_P2 --> VM_T2
+    REQ_P2 --> VM_T3
+    REQ_P2 --> VM_A1
+    
+    REQ_P3 --> VM_T1
+    REQ_P3 --> VM_T2
+    REQ_P3 --> VM_A1
+    
+    REQ_P4 --> VM_T2
+    REQ_P4 --> VM_T3
+    REQ_P4 --> VM_A1
+    
+    %% Functional Requirements to Verification Methods
+    REQ_F1 --> VM_T2
+    REQ_F1 --> VM_T3
+    REQ_F1 --> VM_A1
+    REQ_F1 --> VM_A2
+    
+    REQ_F2 --> VM_T2
+    REQ_F2 --> VM_T3
+    REQ_F2 --> VM_A2
+    
+    REQ_F3 --> VM_T2
+    REQ_F3 --> VM_T3
+    REQ_F3 --> VM_D2
+    REQ_F3 --> VM_D3
+    
+    REQ_F4 --> VM_T3
+    REQ_F4 --> VM_T4
+    REQ_F4 --> VM_I1
+    
+    %% System Requirements to Verification Methods
+    REQ_S1 --> VM_T1
+    REQ_S1 --> VM_T4
+    REQ_S1 --> VM_D1
+    REQ_S1 --> VM_I1
+    
+    REQ_S2 --> VM_T1
+    REQ_S2 --> VM_T4
+    REQ_S2 --> VM_A2
+    REQ_S2 --> VM_I1
+    
+    REQ_S3 --> VM_T2
+    REQ_S3 --> VM_T4
+    REQ_S3 --> VM_D2
+    REQ_S3 --> VM_I1
+    
+    REQ_S4 --> VM_T3
+    REQ_S4 --> VM_I2
+    REQ_S4 --> VM_D3
+    
+    %% Verification Methods to Results
+    VM_T1 --> VR_S1
+    VM_D1 --> VR_S1
+    VM_A1 --> VR_S1
+    
+    VM_T1 --> VR_S2
+    VM_T4 --> VR_S2
+    VM_A2 --> VR_S2
+    
+    VM_T2 --> VR_S3
+    VM_D2 --> VR_S3
+    VM_A1 --> VR_S3
+    
+    VM_T3 --> VR_S4
+    VM_I2 --> VR_S4
+    VM_D3 --> VR_S4
+    
+    VM_T4 --> VR_INT
+    VR_S1 --> VR_INT
+    VR_S2 --> VR_INT
+    VR_S3 --> VR_INT
+    VR_S4 --> VR_INT
+    
+    %% Styling
+    classDef perfReq fill:#ff6b6b,stroke:#c92a2a,stroke-width:3px,color:#fff
+    classDef funcReq fill:#4ecdc4,stroke:#0b7285,stroke-width:3px,color:#fff
+    classDef sysReq fill:#a8dadc,stroke:#1d3557,stroke-width:3px,color:#000
+    classDef analysis fill:#ffd93d,stroke:#f08c00,stroke-width:2px,color:#000
+    classDef test fill:#95e1d3,stroke:#087f5b,stroke-width:2px,color:#000
+    classDef inspect fill:#c9ada7,stroke:#6f4c3e,stroke-width:2px,color:#fff
+    classDef demo fill:#9d84b7,stroke:#6b4c9a,stroke-width:2px,color:#fff
+    classDef results fill:#51cf66,stroke:#2f9e44,stroke-width:3px,color:#fff
+    
+    class REQ_P1,REQ_P2,REQ_P3,REQ_P4 perfReq
+    class REQ_F1,REQ_F2,REQ_F3,REQ_F4 funcReq
+    class REQ_S1,REQ_S2,REQ_S3,REQ_S4 sysReq
+    class VM_A1,VM_A2 analysis
+    class VM_T1,VM_T2,VM_T3,VM_T4 test
+    class VM_I1,VM_I2 inspect
+    class VM_D1,VM_D2,VM_D3 demo
+    class VR_S1,VR_S2,VR_S3,VR_S4,VR_INT results

@@ -1,0 +1,10 @@
+active: true
+derived: false
+header: ''
+level: 1.12
+links: []
+normative: true
+ref: ''
+reviewed: null
+text: |
+  The trained RL policy shall achieve stable hover for >=60 seconds in simulation.

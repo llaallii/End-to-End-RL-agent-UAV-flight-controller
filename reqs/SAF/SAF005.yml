@@ -1,0 +1,10 @@
+active: true
+derived: false
+header: ''
+level: 1.5
+links: []
+normative: true
+ref: ''
+reviewed: null
+text: |
+  GPS quality shall be flagged as degraded when HDOP >5.0 or satellite count <4.

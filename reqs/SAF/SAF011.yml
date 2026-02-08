@@ -1,0 +1,10 @@
+active: true
+derived: false
+header: ''
+level: 1.11
+links: []
+normative: true
+ref: ''
+reviewed: null
+text: |
+  An RL inference watchdog with a 5 ms timeout shall monitor each inference cycle; timeout shall trigger automatic fallback to the PID controller.

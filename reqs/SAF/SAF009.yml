@@ -1,0 +1,10 @@
+active: true
+derived: false
+header: ''
+level: 1.9
+links: []
+normative: true
+ref: ''
+reviewed: null
+text: |
+  The system shall enforce a maximum horizontal velocity of 15 m/s and a maximum vertical velocity of 5 m/s.

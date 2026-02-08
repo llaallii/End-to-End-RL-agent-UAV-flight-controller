@@ -220,8 +220,8 @@ fp-info-cache
 # ============================================================================
 # Documentation / Diagrams
 # ============================================================================
-# Mermaid source files (regenerate from version-controlled sources if needed)
-*.mmd
+# Mermaid source files are version-controlled (do NOT ignore)
+# *.mmd
 
 # Temporary rendering files
 *.tmp

@@ -1,0 +1,10 @@
+active: true
+derived: false
+header: ''
+level: 1.9
+links: []
+normative: true
+ref: ''
+reviewed: null
+text: |
+  The embedded RL inference output shall match the PC-based FP32 inference output within a documented acceptable tolerance.

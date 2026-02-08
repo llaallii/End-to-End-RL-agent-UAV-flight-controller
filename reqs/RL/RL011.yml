@@ -1,0 +1,10 @@
+active: true
+derived: false
+header: ''
+level: 1.11
+links: []
+normative: true
+ref: ''
+reviewed: null
+text: |
+  The RL training pipeline shall execute >=3 training iterations with performance analysis between each.

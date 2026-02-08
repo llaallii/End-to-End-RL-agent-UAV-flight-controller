@@ -1,0 +1,10 @@
+active: true
+derived: false
+header: ''
+level: 1.2
+links: []
+normative: true
+ref: ''
+reviewed: null
+text: |
+  The PCB shall use a >=4-layer stackup with dedicated power and ground planes.

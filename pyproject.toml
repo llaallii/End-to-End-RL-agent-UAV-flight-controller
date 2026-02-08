@@ -1,0 +1,122 @@
+[build-system]
+requires = ["setuptools>=68.0", "setuptools-scm>=8.0"]
+build-backend = "setuptools.build_meta"
+
+[project]
+name = "uav-rl-flight-controller"
+version = "0.1.0"
+description = "End-to-end reinforcement learning agent for autonomous UAV flight control"
+readme = "README.md"
+requires-python = ">=3.12"
+license = {text = "MIT"}
+authors = [
+    {name = "Ratan Lal Bunkar"},
+]
+keywords = ["reinforcement-learning", "uav", "flight-controller", "ros2", "gazebo"]
+classifiers = [
+    "Development Status :: 2 - Pre-Alpha",
+    "Intended Audience :: Science/Research",
+    "Programming Language :: Python :: 3.12",
+    "Topic :: Scientific/Engineering :: Artificial Intelligence",
+]
+
+dependencies = [
+    "doorstop>=3.0",
+]
+
+[project.optional-dependencies]
+sim = [
+    "gymnasium>=1.0",
+    "stable-baselines3>=2.3",
+    "numpy>=1.26",
+    "scipy>=1.12",
+    "matplotlib>=3.8",
+]
+train = [
+    "stable-baselines3>=2.3",
+    "gymnasium>=1.0",
+    "tensorboard>=2.16",
+    "wandb>=0.16",
+    "torch>=2.2",
+    "numpy>=1.26",
+]
+docs = [
+    "mkdocs>=1.6",
+    "mkdocs-material>=9.5",
+    "mkdocstrings[python]>=0.24",
+    "mkdocs-mermaid2-plugin>=1.1",
+    "mkdocs-gen-files>=0.5",
+    "mkdocs-literate-nav>=0.6",
+]
+dev = [
+    "ruff>=0.3",
+    "mypy>=1.9",
+    "pytest>=8.0",
+    "pytest-cov>=5.0",
+    "pre-commit>=3.6",
+    "doorstop>=3.0",
+    "mkdocs>=1.6",
+    "mkdocs-material>=9.5",
+]
+
+[tool.setuptools.packages.find]
+include = ["simulation*", "training*"]
+exclude = ["tests*", "docs*", "tools*"]
+
+# ── Ruff (linter + formatter) ──────────────────────────────────────────────
+[tool.ruff]
+target-version = "py312"
+line-length = 100
+src = ["simulation", "training", "tests"]
+
+[tool.ruff.lint]
+select = [
+    "E",    # pycodestyle errors
+    "W",    # pycodestyle warnings
+    "F",    # pyflakes
+    "I",    # isort
+    "N",    # pep8-naming
+    "UP",   # pyupgrade
+    "B",    # flake8-bugbear
+    "SIM",  # flake8-simplify
+    "RUF",  # ruff-specific rules
+]
+ignore = ["E501"]  # line length handled by formatter
+
+[tool.ruff.lint.isort]
+known-first-party = ["simulation", "training"]
+
+# ── Mypy ────────────────────────────────────────────────────────────────────
+[tool.mypy]
+python_version = "3.12"
+warn_return_any = true
+warn_unused_configs = true
+disallow_untyped_defs = false  # relaxed for early development
+ignore_missing_imports = true
+
+# ── Pytest ──────────────────────────────────────────────────────────────────
+[tool.pytest.ini_options]
+testpaths = ["tests", "simulation", "training"]
+python_files = ["test_*.py"]
+python_classes = ["Test*"]
+python_functions = ["test_*"]
+addopts = [
+    "--strict-markers",
+    "--tb=short",
+    "-q",
+]
+markers = [
+    "slow: marks tests as slow (deselect with '-m \"not slow\"')",
+    "integration: integration tests spanning multiple subsystems",
+    "hardware: tests requiring hardware connection",
+    "safety: safety-critical test cases",
+]
+
+# ── Coverage ────────────────────────────────────────────────────────────────
+[tool.coverage.run]
+source = ["simulation", "training"]
+omit = ["*/tests/*", "*/__pycache__/*"]
+
+[tool.coverage.report]
+show_missing = true
+fail_under = 0  # will increase as codebase grows

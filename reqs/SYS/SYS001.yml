@@ -1,0 +1,10 @@
+active: true
+derived: false
+header: ''
+level: 1.1
+links: []
+normative: true
+ref: ''
+reviewed: null
+text: |
+  The project shall progress through 4 validated stages: SITL, RL Training, HIL, and Custom Hardware, with formal gate reviews between each.

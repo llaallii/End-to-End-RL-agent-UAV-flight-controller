@@ -1,0 +1,10 @@
+active: true
+derived: false
+header: ''
+level: 1.7
+links: []
+normative: true
+ref: ''
+reviewed: null
+text: |
+  The actor neural network shall be a feed-forward MLP with 2 hidden layers of 128 neurons each using ReLU activation.

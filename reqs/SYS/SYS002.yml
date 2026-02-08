@@ -1,0 +1,10 @@
+active: true
+derived: false
+header: ''
+level: 1.2
+links: []
+normative: true
+ref: ''
+reviewed: null
+text: |
+  The end-to-end test suite shall include SITL regression, HIL regression, and custom hardware integration test campaigns with documented results.

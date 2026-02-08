@@ -1,0 +1,44 @@
+# ============================================================================
+# Firmware Build Environment
+# ARM GCC cross-compiler + QEMU + Unity test framework
+# ============================================================================
+FROM ubuntu:24.04
+
+LABEL maintainer="Ratan Lal Bunkar"
+LABEL description="ARM cross-compilation environment for UAV flight controller firmware"
+
+ENV DEBIAN_FRONTEND=noninteractive
+
+# ── ARM toolchain + build tools ─────────────────────────────────────────────
+RUN apt-get update && apt-get install -y --no-install-recommends \
+    # ARM GCC cross-compiler
+    gcc-arm-none-eabi \
+    libnewlib-arm-none-eabi \
+    libnewlib-dev \
+    # Build system
+    cmake \
+    make \
+    ninja-build \
+    # Static analysis
+    cppcheck \
+    # QEMU for emulated testing
+    qemu-system-arm \
+    qemu-user \
+    # Utilities
+    git \
+    curl \
+    wget \
+    python3 \
+    python3-pip \
+    && rm -rf /var/lib/apt/lists/*
+
+# ── Unity test framework (header-only, installed from source) ───────────────
+RUN git clone --depth 1 https://github.com/ThrowTheSwitch/Unity.git /opt/unity
+
+ENV UNITY_DIR=/opt/unity
+
+# ── Workspace setup ─────────────────────────────────────────────────────────
+WORKDIR /workspace/firmware
+COPY firmware/ /workspace/firmware/
+
+CMD ["/bin/bash"]

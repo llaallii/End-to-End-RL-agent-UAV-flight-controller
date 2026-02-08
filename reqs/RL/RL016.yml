@@ -1,0 +1,10 @@
+active: true
+derived: false
+header: ''
+level: 1.16
+links: []
+normative: true
+ref: ''
+reviewed: null
+text: |
+  The compressed RL policy shall occupy <1 MB of storage, targeting ~24 KB (INT8 weights + activation buffers).

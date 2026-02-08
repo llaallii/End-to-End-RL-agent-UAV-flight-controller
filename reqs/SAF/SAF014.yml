@@ -1,0 +1,10 @@
+active: true
+derived: false
+header: ''
+level: 1.14
+links: []
+normative: true
+ref: ''
+reviewed: null
+text: |
+  ESC heartbeat loss shall be detected and reported to the Safety Monitor.

@@ -1,0 +1,10 @@
+active: true
+derived: false
+header: ''
+level: 1.22
+links: []
+normative: true
+ref: ''
+reviewed: null
+text: |
+  RC signal loss >5 s shall escalate to CRITICAL state; telemetry loss >30 s shall escalate to WARNING state.

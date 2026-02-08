@@ -1,0 +1,10 @@
+active: true
+derived: false
+header: ''
+level: 1.6
+links: []
+normative: true
+ref: ''
+reviewed: null
+text: |
+  The complete control loop (sensor read, inference, motor output) shall execute in <10 ms (>=100 Hz).

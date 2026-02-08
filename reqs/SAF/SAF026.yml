@@ -1,0 +1,10 @@
+active: true
+derived: false
+header: ''
+level: 1.26
+links: []
+normative: true
+ref: ''
+reviewed: null
+text: |
+  A black-box flight data logger shall record sensor data, control signals, fault events, and battery telemetry to SD card at 100 Hz.

@@ -1,0 +1,10 @@
+active: true
+derived: false
+header: ''
+level: 1.8
+links: []
+normative: true
+ref: ''
+reviewed: null
+text: |
+  The deployed actor network shall contain <=19,076 parameters (~19 K INT8 or ~76 KB FP32).
