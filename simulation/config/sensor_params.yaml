@@ -1,0 +1,32 @@
+# Sensor noise parameters
+# Refs: SIM009, SIM010, SIM011
+
+imu:                           # MPU-6050 (SIM010)
+  update_rate: 250             # Hz (SIM009: >=100 Hz)
+  frame_id: base_link
+  gyroscope:
+    noise_density: 8.73e-5     # rad/s/sqrt(Hz)
+    noise_stddev: 0.00138      # rad/s (at 250 Hz)
+    bias_mean: 0.0
+    bias_stddev: 0.0003        # rad/s
+  accelerometer:
+    noise_density: 3.92e-3     # m/s^2/sqrt(Hz)
+    noise_stddev: 0.062        # m/s^2 (at 250 Hz)
+    bias_mean: 0.0
+    bias_stddev: 0.001         # m/s^2
+
+barometer:                     # BMP280-like
+  update_rate: 50              # Hz
+  frame_id: base_link
+  reference_altitude: 0.0      # m (sea level)
+  reference_pressure: 101325.0 # Pa
+  pressure_noise_stddev: 0.25  # Pa
+
+gps:
+  update_rate: 5               # Hz
+  frame_id: base_link
+  horizontal_noise_stddev: 1.5 # m
+  vertical_noise_stddev: 3.0   # m
+  reference_latitude: 47.3977
+  reference_longitude: 8.5456
+  reference_altitude: 0.0

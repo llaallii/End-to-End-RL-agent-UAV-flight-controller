@@ -1,0 +1,114 @@
+<?xml version="1.0" ?>
+<!--
+  empty_flat.sdf — Clean flat world for hover tests.
+
+  Requirements satisfied:
+    SIM003: Physics timestep <= 0.004 s (max_step_size = 0.004)
+    SIM012: 2+ world files (this is 1 of 2)
+
+  Physics engine: DART
+  Control-loop rate: 250 Hz (real_time_update_rate)
+-->
+<sdf version="1.9">
+  <world name="empty_flat">
+
+    <!-- ============================================================ -->
+    <!-- Gravity                                                      -->
+    <!-- ============================================================ -->
+    <gravity>0 0 -9.81</gravity>
+
+    <!-- ============================================================ -->
+    <!-- Physics: DART engine, 0.004 s step (250 Hz)                  -->
+    <!-- ============================================================ -->
+    <physics name="dart_physics" type="dart">
+      <max_step_size>0.004</max_step_size>
+      <real_time_factor>1.0</real_time_factor>
+      <real_time_update_rate>250</real_time_update_rate>
+    </physics>
+
+    <!-- ============================================================ -->
+    <!-- World-level plugins                                          -->
+    <!-- ============================================================ -->
+    <plugin filename="gz-sim-physics-system"
+            name="gz::sim::systems::Physics">
+    </plugin>
+
+    <plugin filename="gz-sim-scene-broadcaster-system"
+            name="gz::sim::systems::SceneBroadcaster">
+    </plugin>
+
+    <plugin filename="gz-sim-user-commands-system"
+            name="gz::sim::systems::UserCommands">
+    </plugin>
+
+    <plugin filename="gz-sim-sensors-system"
+            name="gz::sim::systems::Sensors">
+      <render_engine>ogre2</render_engine>
+    </plugin>
+
+    <plugin filename="gz-sim-imu-system"
+            name="gz::sim::systems::Imu">
+    </plugin>
+
+    <plugin filename="gz-sim-air-pressure-system"
+            name="gz::sim::systems::AirPressure">
+    </plugin>
+
+    <!-- ============================================================ -->
+    <!-- Scene                                                        -->
+    <!-- ============================================================ -->
+    <scene>
+      <ambient>0.4 0.4 0.4 1</ambient>
+      <background>0.7 0.85 1.0 1</background>
+      <shadows>true</shadows>
+    </scene>
+
+    <!-- ============================================================ -->
+    <!-- Sun (directional light)                                      -->
+    <!-- ============================================================ -->
+    <light type="directional" name="sun">
+      <cast_shadows>true</cast_shadows>
+      <pose>0 0 10 0 0 0</pose>
+      <diffuse>0.8 0.8 0.8 1</diffuse>
+      <specular>0.2 0.2 0.2 1</specular>
+      <attenuation>
+        <range>1000</range>
+        <constant>0.9</constant>
+        <linear>0.01</linear>
+        <quadratic>0.001</quadratic>
+      </attenuation>
+      <direction>-0.5 0.1 -0.9</direction>
+    </light>
+
+    <!-- ============================================================ -->
+    <!-- Ground plane: 100 m x 100 m                                  -->
+    <!-- ============================================================ -->
+    <model name="ground_plane">
+      <static>true</static>
+      <link name="link">
+        <collision name="collision">
+          <geometry>
+            <plane>
+              <normal>0 0 1</normal>
+              <size>100 100</size>
+            </plane>
+          </geometry>
+        </collision>
+        <visual name="visual">
+          <geometry>
+            <plane>
+              <normal>0 0 1</normal>
+              <size>100 100</size>
+            </plane>
+          </geometry>
+          <material>
+            <ambient>0.8 0.8 0.8 1</ambient>
+            <diffuse>0.8 0.8 0.8 1</diffuse>
+            <specular>0.8 0.8 0.8 1</specular>
+          </material>
+        </visual>
+      </link>
+    </model>
+
+  </world>
+</sdf>

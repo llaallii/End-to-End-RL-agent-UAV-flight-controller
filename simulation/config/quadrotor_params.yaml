@@ -1,0 +1,64 @@
+# Quadrotor physical parameters (250mm-class Quad-X)
+# Requirement refs: SIM005, SIM006, SIM007, SIM008
+
+quadrotor:
+  mass: 1.0                    # kg (SIM007)
+  gravity: 9.81                # m/s^2
+
+  inertia:                     # kg*m^2 (SIM007)
+    ixx: 0.0049
+    iyy: 0.0049
+    izz: 0.0069
+    ixy: 0.0
+    ixz: 0.0
+    iyz: 0.0
+
+  geometry:
+    arm_length: 0.175          # m (center to motor)
+    body_width: 0.12           # m
+    body_height: 0.04          # m
+
+  motors:                      # (SIM006)
+    count: 4
+    motor_constant: 8.55e-6    # N/(rad/s)^2 (kF)
+    moment_constant: 0.016     # dimensionless (kM = torque / thrust)
+    max_rot_velocity: 838.0    # rad/s (~8000 RPM)
+    time_constant_up: 0.0625   # s (62.5 ms, within SIM006 50-100ms)
+    time_constant_down: 0.025  # s (25 ms, faster spindown)
+    rotor_drag_coefficient: 8.06e-5
+    rolling_moment_coefficient: 1.0e-6
+    # Quad-X layout, body frame FLU (Forward-Left-Up), Z-up
+    # Viewed from above:
+    #     M1(CW)---M0(CCW)
+    #         \    /
+    #          \/
+    #          /\
+    #         /    \
+    #     M2(CCW)---M3(CW)
+    positions:
+      - name: motor_0_fr
+        x:  0.1237
+        y: -0.1237
+        z:  0.02
+        direction: ccw
+      - name: motor_1_fl
+        x:  0.1237
+        y:  0.1237
+        z:  0.02
+        direction: cw
+      - name: motor_2_rl
+        x: -0.1237
+        y:  0.1237
+        z:  0.02
+        direction: ccw
+      - name: motor_3_rr
+        x: -0.1237
+        y: -0.1237
+        z:  0.02
+        direction: cw
+
+  aerodynamics:                # (SIM008)
+    translational_drag_coeff: 0.1     # N*s^2/m^2 per axis
+    rotational_drag_coeff: 0.01       # N*m*s^2/rad^2 per axis
+    # Terminal velocity (vertical free-fall):
+    # v_term = sqrt(m*g / drag_coeff) = sqrt(9.81 / 0.1) = 9.9 m/s

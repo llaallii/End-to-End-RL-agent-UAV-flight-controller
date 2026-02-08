@@ -1,0 +1,45 @@
+# ros_gz_bridge topic configuration for SITL simulation.
+#
+# Maps Gazebo Harmonic (gz-sim 8) topics to ROS 2 Jazzy topics.
+# Used by the parameter_bridge node via the config_file parameter.
+#
+# NOTE: Sensor topic paths include the world name "empty_flat".
+# If using a different world (e.g. outdoor_obstacles), create a
+# corresponding bridge config or parameterise the world name.
+#
+# Requirement refs: SIM009, SIM010, SIM011
+
+# --- IMU (250 Hz, MPU-6050 noise model) ---
+- ros_topic_name: "/pid_controller_node/imu"
+  gz_topic_name: "/world/empty_flat/model/quadrotor/link/base_link/sensor/imu_sensor/imu"
+  ros_type_name: "sensor_msgs/msg/Imu"
+  gz_type_name: "gz.msgs.IMU"
+  direction: GZ_TO_ROS
+
+# --- Barometer / air pressure (50 Hz) ---
+- ros_topic_name: "/pid_controller_node/air_pressure"
+  gz_topic_name: "/world/empty_flat/model/quadrotor/link/base_link/sensor/air_pressure_sensor/air_pressure"
+  ros_type_name: "sensor_msgs/msg/FluidPressure"
+  gz_type_name: "gz.msgs.FluidPressure"
+  direction: GZ_TO_ROS
+
+# --- Odometry (ground truth, 100 Hz) ---
+- ros_topic_name: "/pid_controller_node/odometry"
+  gz_topic_name: "/model/quadrotor/odometry"
+  ros_type_name: "nav_msgs/msg/Odometry"
+  gz_type_name: "gz.msgs.Odometry"
+  direction: GZ_TO_ROS
+
+# --- Motor speed commands (ROS -> Gazebo) ---
+- ros_topic_name: "/pid_controller_node/command/motor_speed"
+  gz_topic_name: "/quadrotor/command/motor_speed"
+  ros_type_name: "actuator_msgs/msg/Actuators"
+  gz_type_name: "gz.msgs.Actuators"
+  direction: ROS_TO_GZ
+
+# --- Simulation clock ---
+- ros_topic_name: "/clock"
+  gz_topic_name: "/clock"
+  ros_type_name: "rosgraph_msgs/msg/Clock"
+  gz_type_name: "gz.msgs.Clock"
+  direction: GZ_TO_ROS

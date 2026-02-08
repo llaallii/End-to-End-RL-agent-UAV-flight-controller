@@ -1,0 +1,274 @@
+<?xml version="1.0" ?>
+<!--
+  outdoor_obstacles.sdf — Outdoor world with obstacles and wind for
+  navigation and avoidance testing.
+
+  Requirements satisfied:
+    SIM003: Physics timestep <= 0.004 s (max_step_size = 0.004)
+    SIM012: 2+ world files (this is 2 of 2)
+
+  Physics engine: DART
+  Control-loop rate: 250 Hz (real_time_update_rate)
+  Wind: 2 m/s from the west (+X direction)
+-->
+<sdf version="1.9">
+  <world name="outdoor_obstacles">
+
+    <!-- ============================================================ -->
+    <!-- Gravity                                                      -->
+    <!-- ============================================================ -->
+    <gravity>0 0 -9.81</gravity>
+
+    <!-- ============================================================ -->
+    <!-- Wind: 2 m/s from west (positive X)                           -->
+    <!-- ============================================================ -->
+    <wind>
+      <linear_velocity>2 0 0</linear_velocity>
+    </wind>
+
+    <!-- ============================================================ -->
+    <!-- Physics: DART engine, 0.004 s step (250 Hz)                  -->
+    <!-- ============================================================ -->
+    <physics name="dart_physics" type="dart">
+      <max_step_size>0.004</max_step_size>
+      <real_time_factor>1.0</real_time_factor>
+      <real_time_update_rate>250</real_time_update_rate>
+    </physics>
+
+    <!-- ============================================================ -->
+    <!-- World-level plugins                                          -->
+    <!-- ============================================================ -->
+    <plugin filename="gz-sim-physics-system"
+            name="gz::sim::systems::Physics">
+    </plugin>
+
+    <plugin filename="gz-sim-scene-broadcaster-system"
+            name="gz::sim::systems::SceneBroadcaster">
+    </plugin>
+
+    <plugin filename="gz-sim-user-commands-system"
+            name="gz::sim::systems::UserCommands">
+    </plugin>
+
+    <plugin filename="gz-sim-sensors-system"
+            name="gz::sim::systems::Sensors">
+      <render_engine>ogre2</render_engine>
+    </plugin>
+
+    <plugin filename="gz-sim-imu-system"
+            name="gz::sim::systems::Imu">
+    </plugin>
+
+    <plugin filename="gz-sim-air-pressure-system"
+            name="gz::sim::systems::AirPressure">
+    </plugin>
+
+    <plugin filename="gz-sim-wind-effects-system"
+            name="gz::sim::systems::WindEffects">
+    </plugin>
+
+    <!-- ============================================================ -->
+    <!-- Scene                                                        -->
+    <!-- ============================================================ -->
+    <scene>
+      <ambient>0.4 0.4 0.4 1</ambient>
+      <background>0.7 0.85 1.0 1</background>
+      <shadows>true</shadows>
+    </scene>
+
+    <!-- ============================================================ -->
+    <!-- Sun (directional light)                                      -->
+    <!-- ============================================================ -->
+    <light type="directional" name="sun">
+      <cast_shadows>true</cast_shadows>
+      <pose>0 0 10 0 0 0</pose>
+      <diffuse>0.8 0.8 0.8 1</diffuse>
+      <specular>0.2 0.2 0.2 1</specular>
+      <attenuation>
+        <range>1000</range>
+        <constant>0.9</constant>
+        <linear>0.01</linear>
+        <quadratic>0.001</quadratic>
+      </attenuation>
+      <direction>-0.5 0.1 -0.9</direction>
+    </light>
+
+    <!-- ============================================================ -->
+    <!-- Ground plane: 100 m x 100 m                                  -->
+    <!-- ============================================================ -->
+    <model name="ground_plane">
+      <static>true</static>
+      <link name="link">
+        <collision name="collision">
+          <geometry>
+            <plane>
+              <normal>0 0 1</normal>
+              <size>100 100</size>
+            </plane>
+          </geometry>
+        </collision>
+        <visual name="visual">
+          <geometry>
+            <plane>
+              <normal>0 0 1</normal>
+              <size>100 100</size>
+            </plane>
+          </geometry>
+          <material>
+            <ambient>0.8 0.8 0.8 1</ambient>
+            <diffuse>0.8 0.8 0.8 1</diffuse>
+            <specular>0.8 0.8 0.8 1</specular>
+          </material>
+        </visual>
+      </link>
+    </model>
+
+    <!-- ============================================================ -->
+    <!-- Landing pad: 1.5 m x 1.5 m green square at origin           -->
+    <!-- ============================================================ -->
+    <model name="landing_pad">
+      <static>true</static>
+      <pose>0 0 0.005 0 0 0</pose>
+      <link name="link">
+        <collision name="collision">
+          <geometry>
+            <box>
+              <size>1.5 1.5 0.01</size>
+            </box>
+          </geometry>
+        </collision>
+        <visual name="visual">
+          <geometry>
+            <box>
+              <size>1.5 1.5 0.01</size>
+            </box>
+          </geometry>
+          <material>
+            <ambient>0.1 0.8 0.1 1</ambient>
+            <diffuse>0.1 0.8 0.1 1</diffuse>
+            <specular>0.1 0.3 0.1 1</specular>
+          </material>
+        </visual>
+      </link>
+    </model>
+
+    <!-- ============================================================ -->
+    <!-- Obstacle 1: Box 2 m x 2 m x 3 m at (5, 3, 1.5)             -->
+    <!-- ============================================================ -->
+    <model name="obstacle_box_1">
+      <static>true</static>
+      <pose>5 3 1.5 0 0 0</pose>
+      <link name="link">
+        <collision name="collision">
+          <geometry>
+            <box>
+              <size>2 2 3</size>
+            </box>
+          </geometry>
+        </collision>
+        <visual name="visual">
+          <geometry>
+            <box>
+              <size>2 2 3</size>
+            </box>
+          </geometry>
+          <material>
+            <ambient>0.5 0.5 0.5 1</ambient>
+            <diffuse>0.5 0.5 0.5 1</diffuse>
+            <specular>0.3 0.3 0.3 1</specular>
+          </material>
+        </visual>
+      </link>
+    </model>
+
+    <!-- ============================================================ -->
+    <!-- Obstacle 2: Box 1 m x 1 m x 2 m at (-4, 2, 1.0)            -->
+    <!-- ============================================================ -->
+    <model name="obstacle_box_2">
+      <static>true</static>
+      <pose>-4 2 1.0 0 0 0</pose>
+      <link name="link">
+        <collision name="collision">
+          <geometry>
+            <box>
+              <size>1 1 2</size>
+            </box>
+          </geometry>
+        </collision>
+        <visual name="visual">
+          <geometry>
+            <box>
+              <size>1 1 2</size>
+            </box>
+          </geometry>
+          <material>
+            <ambient>0.5 0.5 0.5 1</ambient>
+            <diffuse>0.5 0.5 0.5 1</diffuse>
+            <specular>0.3 0.3 0.3 1</specular>
+          </material>
+        </visual>
+      </link>
+    </model>
+
+    <!-- ============================================================ -->
+    <!-- Obstacle 3: Box 3 m x 1 m x 2.5 m at (2, -5, 1.25)         -->
+    <!-- ============================================================ -->
+    <model name="obstacle_box_3">
+      <static>true</static>
+      <pose>2 -5 1.25 0 0 0</pose>
+      <link name="link">
+        <collision name="collision">
+          <geometry>
+            <box>
+              <size>3 1 2.5</size>
+            </box>
+          </geometry>
+        </collision>
+        <visual name="visual">
+          <geometry>
+            <box>
+              <size>3 1 2.5</size>
+            </box>
+          </geometry>
+          <material>
+            <ambient>0.5 0.5 0.5 1</ambient>
+            <diffuse>0.5 0.5 0.5 1</diffuse>
+            <specular>0.3 0.3 0.3 1</specular>
+          </material>
+        </visual>
+      </link>
+    </model>
+
+    <!-- ============================================================ -->
+    <!-- Obstacle 4: Cylinder radius 0.5 m, height 4 m at (-3,-4,2)  -->
+    <!-- ============================================================ -->
+    <model name="obstacle_cylinder_1">
+      <static>true</static>
+      <pose>-3 -4 2.0 0 0 0</pose>
+      <link name="link">
+        <collision name="collision">
+          <geometry>
+            <cylinder>
+              <radius>0.5</radius>
+              <length>4</length>
+            </cylinder>
+          </geometry>
+        </collision>
+        <visual name="visual">
+          <geometry>
+            <cylinder>
+              <radius>0.5</radius>
+              <length>4</length>
+            </cylinder>
+          </geometry>
+          <material>
+            <ambient>0.5 0.5 0.5 1</ambient>
+            <diffuse>0.5 0.5 0.5 1</diffuse>
+            <specular>0.3 0.3 0.3 1</specular>
+          </material>
+        </visual>
+      </link>
+    </model>
+
+  </world>
+</sdf>

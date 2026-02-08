@@ -1,0 +1,43 @@
+<?xml version="1.0"?>
+<?xml-model href="http://download.ros.org/schema/package_format3.xsd" schematypens="http://www.w3.org/2001/XMLSchema"?>
+<!--
+  ROS 2 package manifest for uav_sim.
+
+  Wraps the simulation CascadedPIDController as a ROS 2 node and provides
+  SITL launch files for Gazebo Harmonic integration.
+
+  Requirement refs: SIM013-SIM018
+-->
+<package format="3">
+  <name>uav_sim</name>
+  <version>0.1.0</version>
+  <description>
+    ROS 2 integration package for the UAV RL flight-controller project.
+    Provides a PID controller node, Gazebo bridge configuration, and
+    SITL launch files.
+  </description>
+  <maintainer email="ratan@todo.todo">Ratan Lal Bunkar</maintainer>
+  <license>MIT</license>
+
+  <buildtool_depend>ament_python</buildtool_depend>
+
+  <!-- Runtime dependencies -->
+  <exec_depend>rclpy</exec_depend>
+  <exec_depend>std_msgs</exec_depend>
+  <exec_depend>sensor_msgs</exec_depend>
+  <exec_depend>geometry_msgs</exec_depend>
+  <exec_depend>nav_msgs</exec_depend>
+  <exec_depend>actuator_msgs</exec_depend>
+  <exec_depend>ros_gz_sim</exec_depend>
+  <exec_depend>ros_gz_bridge</exec_depend>
+
+  <!-- Test dependencies -->
+  <test_depend>ament_copyright</test_depend>
+  <test_depend>ament_flake8</test_depend>
+  <test_depend>ament_pep257</test_depend>
+  <test_depend>python3-pytest</test_depend>
+
+  <export>
+    <build_type>ament_python</build_type>
+  </export>
+</package>

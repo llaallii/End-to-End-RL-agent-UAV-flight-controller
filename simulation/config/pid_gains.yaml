@@ -1,0 +1,70 @@
+# Cascaded PID controller gains for ~1kg quadrotor
+# Refs: SIM013-SIM018
+# Architecture: Position -> Velocity -> Attitude -> Rate -> Mixer
+
+control_rates:
+  position_hz: 50         # outer loop rate
+  attitude_hz: 250        # inner loop rate (SIM018: >=100 Hz)
+
+position:                 # P-only, output: velocity setpoint (m/s)
+  xy:
+    kp: 1.0
+    ki: 0.0
+    kd: 0.0
+    output_limit: 3.0     # max velocity command m/s
+  z:
+    kp: 1.0
+    ki: 0.0
+    kd: 0.0
+    output_limit: 2.0
+
+velocity:                 # PI, output: acceleration setpoint (m/s^2)
+  xy:
+    kp: 2.0
+    ki: 0.3
+    kd: 0.0
+    integral_limit: 2.0
+    output_limit: 5.0     # max accel m/s^2 -> max tilt ~30 deg
+  z:
+    kp: 4.0
+    ki: 0.5
+    kd: 0.0
+    integral_limit: 3.0
+    output_limit: 8.0
+
+attitude:                 # P-only, output: angular rate setpoint (rad/s)
+  roll:
+    kp: 6.5
+    ki: 0.0
+    kd: 0.0
+    output_limit: 5.0     # max rate rad/s
+  pitch:
+    kp: 6.5
+    ki: 0.0
+    kd: 0.0
+    output_limit: 5.0
+  yaw:
+    kp: 2.8
+    ki: 0.0
+    kd: 0.0
+    output_limit: 3.0
+
+rate:                     # PID, output: normalized torque demand
+  roll:
+    kp: 0.15
+    ki: 0.10
+    kd: 0.003
+    integral_limit: 0.3
+    output_limit: 1.0
+  pitch:
+    kp: 0.15
+    ki: 0.10
+    kd: 0.003
+    integral_limit: 0.3
+    output_limit: 1.0
+  yaw:
+    kp: 0.10
+    ki: 0.05
+    kd: 0.0
+    integral_limit: 0.2
+    output_limit: 0.5
