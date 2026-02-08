@@ -7,7 +7,7 @@ site_author: Ratan Lal Bunkar
 site_url: ""
 
 repo_name: End-to-End-RL-agent-UAV-flight-controller
-# repo_url: https://github.com/<owner>/End-to-End-RL-agent-UAV-flight-controller
+# repo_url: https://github.com/llaallii/End-to-End-RL-agent-UAV-flight-controller
 
 # ── Theme ───────────────────────────────────────────────────────────────────
 theme:
