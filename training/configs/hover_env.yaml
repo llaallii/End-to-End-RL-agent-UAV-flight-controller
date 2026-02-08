@@ -1,0 +1,52 @@
+# Gymnasium environment configuration for quadrotor hover task.
+# Requirement refs: RL001-RL006, SAF007-SAF010
+
+physics:
+  sim_freq: 250           # Hz — physics timestep = 1/250 = 0.004 s (SIM003)
+  control_freq: 50        # Hz — agent acts every 5 physics steps
+  max_episode_time: 30.0  # seconds (RL005)
+
+observation:
+  # Normalization scales: obs_i = raw_i / scale_i, then clipped to [-1, 1]
+  position_scale: 5.0     # meters
+  velocity_scale: 5.0     # m/s
+  angular_velocity_scale: 10.0  # rad/s
+  # Euler angles normalized by pi (built-in)
+
+action:
+  # RL003: actions in [-1, 1], mapped to motor speeds
+  max_rot_velocity: 838.0  # rad/s — maps action=+1
+
+goal:
+  position: [0.0, 0.0, 1.0]  # default hover target [x, y, z] meters
+
+reward:
+  # RL004: tunable reward weights
+  position_weight: 1.0       # ||pos_error||
+  velocity_weight: 0.1       # ||velocity||
+  attitude_weight: 0.5       # |roll| + |pitch|
+  angular_rate_weight: 0.05  # ||angular_velocity||
+  action_smoothness_weight: 0.01  # ||action - prev_action||
+  alive_bonus: 0.5           # constant per-step bonus for not crashing
+  crash_penalty: 5.0         # one-time penalty on termination
+
+termination:
+  # SAF007-SAF010, RL005
+  max_tilt_deg: 45.0        # degrees — roll or pitch (SAF008)
+  max_altitude: 100.0       # meters AGL (SAF007)
+  min_altitude: -0.5        # meters — below ground = crash
+  max_horizontal_velocity: 15.0  # m/s (SAF009)
+  max_vertical_velocity: 5.0     # m/s (SAF009)
+  geofence_radius: 500.0    # meters from origin (SAF010)
+
+initial_state:
+  mode: "hover"             # "hover" starts at goal, "ground" starts at z=0
+  position_noise: 0.0       # meters std-dev added to initial position
+  velocity_noise: 0.0       # m/s std-dev added to initial velocity
+  attitude_noise_deg: 0.0   # degrees std-dev added to initial euler angles
+
+domain_randomization:
+  enabled: false
+  mass_range: [0.8, 1.2]            # kg (±20% of 1.0)
+  inertia_scale_range: [0.85, 1.15] # multiplicative (±15%)
+  motor_constant_range: [7.7e-6, 9.4e-6]  # N/(rad/s)^2 (±10% of 8.55e-6)
