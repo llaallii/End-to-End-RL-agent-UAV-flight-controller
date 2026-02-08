@@ -37,6 +37,7 @@ setup(
     entry_points={
         "console_scripts": [
             "pid_controller_node = uav_sim.pid_controller_node:main",
+            "rl_policy_node = uav_sim.rl_policy_node:main",
         ],
     },
 )

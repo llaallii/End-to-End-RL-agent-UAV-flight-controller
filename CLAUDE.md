@@ -60,32 +60,64 @@ This is a multi-domain project building an end-to-end RL-based autonomous UAV fl
 | **Simulation** | `simulation/` | Python | ROS 2 Jazzy, Gazebo Harmonic, Gymnasium |
 | **RL Training** | `training/` | Python | Stable-Baselines3 (SAC/PPO/TD3), PyTorch, W&B |
 | **Firmware** | `firmware/` | C/C++ | ARM Cortex-M, FreeRTOS, CMake |
-| **Hardware** | `hardware/` | — | KiCad PCB design |
+| **Hardware** | `hardware/` | -- | KiCad PCB design |
 
 Supporting directories: `tests/` (integration/system/performance/safety), `tools/` (Docker, CI, scripts), `docs/` (MkDocs + Mermaid diagrams), `reqs/` (Doorstop requirements).
 
 ### How Domains Connect
 
-1. **Simulation** provides a Gazebo physics environment with sensor models (IMU, barometer, GPS, optical flow) and a PID baseline controller validated for stable hover.
-2. **Training** wraps the simulation in a Gymnasium environment, trains an RL policy (2-layer MLP, 128 neurons/layer), and exports a quantized INT8 model.
-3. **Firmware** runs the quantized policy on an ARM MCU under FreeRTOS with a PID fallback and 100 Hz safety monitor.
-4. **Hardware** is a custom PCB flight controller hosting the firmware.
+1. **Simulation** (`simulation/core/`) provides 6-DOF quadrotor dynamics via `QuadrotorDynamics` using RK4 integration, with sensor models (IMU, barometer, GPS, optical flow) and a `CascadedPIDController` baseline (outer loop 50 Hz, inner loop 250 Hz).
+2. **Training** wraps the simulation in `QuadrotorHoverEnv` (a Gymnasium `gym.Env`), trains an RL policy (2-layer MLP, 128 neurons/layer) using SB3 algorithms, and exports a quantized INT8 model.
+3. **Firmware** (future) runs the quantized policy on an ARM MCU under FreeRTOS with a PID fallback and 100 Hz safety monitor.
+4. **Hardware** (future) is a custom PCB flight controller hosting the firmware.
+
+### Key Classes and Data Flow
+
+**Simulation core** (`simulation/core/`):
+- `QuadrotorDynamics` -- 6-DOF rigid body physics with RK4 integration; state is 13-element vector (position, velocity, quaternion [w,x,y,z], angular_velocity)
+- `QuadrotorParams` / `QuadrotorState` -- dataclasses loaded from `simulation/config/quadrotor_params.yaml`; conventions: World=ENU, Body=FLU, quaternion Hamilton [w,x,y,z]
+- `MotorModel` -- rotor dynamics with spin-up/down delays
+- `AerodynamicsModel` -- drag forces and torques
+- `quaternion_utils` -- Hamilton quaternion operations
+
+**Controllers** (`simulation/controllers/`):
+- `CascadedPIDController` -- Position(P) -> Velocity(PI) -> Attitude(P) -> Rate(PID) -> `QuadXMixer`
+- Gains loaded from `simulation/config/pid_gains.yaml`
+
+**Sensors** (`simulation/sensors/`): `IMUSensor`, `BarometerSensor`, `GPSSensor`, `OpticalFlowSensor` with configurable noise models from `simulation/config/sensor_params.yaml`
+
+**Gymnasium environment** (`training/envs/quadrotor_hover_env.py`):
+- `QuadrotorHoverEnv` -- observation (15-dim normalized): position error, velocity, Euler angles, angular velocity, goal position; action (4-dim [-1,1]): mapped to motor speeds; shaped reward with position/velocity/attitude/rate/action-smoothness penalties; safety termination on tilt/altitude/velocity/geofence violations
+- `HoverEnvConfig` dataclass (`training/envs/config.py`) loaded from `training/configs/hover_env.yaml`
+
+**Training pipeline** (`training/scripts/train_hover.py`):
+- `train()` function selects SAC/PPO/TD3, wraps env with `Monitor` + `make_vec_env()`, saves checkpoints to `training/models/`
+- `TrainConfig` / `WandbConfig` dataclasses (`training/configs/train_config.py`) loaded from `training/configs/train_hover.yaml`
 
 ### Key Design Constraints
 
-- RL policy: **≤19,076 parameters** (~24 KB INT8) to fit MCU memory
+- RL policy: **<=19,076 parameters** (~24 KB INT8) to fit MCU memory
 - Inference latency: **<5 ms** on target MCU
-- Control loop: **≥100 Hz** with **<1 ms jitter**
+- Control loop: **>=100 Hz** with **<1 ms jitter**
 - INT8 quantization must degrade performance **<5%** vs FP32
 - Safety monitor runs at highest RTOS priority; PID fallback always available
+
+### Configuration Pattern
+
+All major components use a **dataclass + YAML** pattern: a Python dataclass with `from_yaml()` and `default()` class methods, backed by a YAML config file. Key config files:
+- `simulation/config/quadrotor_params.yaml` -- physical parameters (mass, inertia, motors, aero)
+- `simulation/config/pid_gains.yaml` -- PID controller gains
+- `simulation/config/sensor_params.yaml` -- sensor noise specs
+- `training/configs/hover_env.yaml` -- environment physics, observation, reward, termination, domain randomization
+- `training/configs/train_hover.yaml` -- algorithm, policy network, hyperparameters, logging
 
 ## Conventions
 
 ### Branching (Simplified Git Flow)
-- `main` — stable, gate-passed milestones only (protected)
-- `develop` — integration branch, default PR target
-- `feature/*`, `bugfix/*`, `docs/*`, `infra/*` — topic branches from `develop`
-- Squash merge feature branches into `develop`; merge `develop` → `main` at stage gates
+- `main` -- stable, gate-passed milestones only (protected)
+- `develop` -- integration branch, default PR target
+- `feature/*`, `bugfix/*`, `docs/*`, `infra/*` -- topic branches from `develop`
+- Squash merge feature branches into `develop`; merge `develop` -> `main` at stage gates
 
 ### Commits
 ```
@@ -95,14 +127,14 @@ Supporting directories: `tests/` (integration/system/performance/safety), `tools
 **Scopes:** `sim`, `fw`, `rl`, `hw`, `safety`, `infra`, `docs`
 
 ### Code Style
-- **Python:** Ruff formatter/linter, 100-char line length, target py312. Rules: E, W, F, I, N, UP, B, SIM, RUF (E501 ignored — handled by formatter). First-party packages: `simulation`, `training`.
+- **Python:** Ruff formatter/linter, 100-char line length, target py312. Rules: E, W, F, I, N, UP, B, SIM, RUF (E501 ignored). First-party packages: `simulation`, `training`.
 - **C/C++:** Google C++ Style Guide (adapted). `snake_case` functions/variables, `UPPER_CASE` constants. Linted with cppcheck + clang-tidy.
 - **Docs:** Markdown with Mermaid diagrams (`.mmd` files).
 
 ### CI Pipelines (GitHub Actions)
-- **sim-ci.yml** — ruff check/format, mypy, pytest with coverage (triggers on simulation/, training/, tests/ changes)
-- **fw-ci.yml** — cppcheck, ARM GCC build (triggers on firmware/ changes)
-- **docs-ci.yml** — mkdocs build --strict, deploy to GitHub Pages on main (triggers on docs/, reqs/ changes)
+- **sim-ci.yml** -- ruff check/format, mypy, pytest with coverage (triggers on simulation/, training/, tests/ changes)
+- **fw-ci.yml** -- cppcheck, ARM GCC build (triggers on firmware/ changes)
+- **docs-ci.yml** -- mkdocs build --strict, deploy to GitHub Pages on main (triggers on docs/, reqs/ changes)
 
 ## Requirements Traceability
 
@@ -117,4 +149,11 @@ Requirements are managed with Doorstop in `reqs/` across six categories:
 | HW | Hardware & PCB | 7 |
 | SAF | Safety & fault handling | 29 |
 
-Validate with `make reqs-validate`. Each requirement is a YAML file (e.g., `reqs/RL/RL001.yml`) with parent-child traceability links.
+Validate with `make reqs-validate`. Each requirement is a YAML file (e.g., `reqs/RL/RL001.yml`) with parent-child traceability links. Code components reference requirements in comments/docstrings (e.g., SIM003, RL007).
+
+## Test Organization
+
+- **Unit tests:** `simulation/tests/` -- physics, controllers, sensors, quaternion math, types
+- **Integration tests:** `training/envs/tests/` -- Gymnasium environment behavior
+- **Training smoke tests:** `training/scripts/tests/` -- end-to-end training pipeline
+- **Cross-domain tests:** `tests/` -- shared fixtures in `tests/conftest.py`
